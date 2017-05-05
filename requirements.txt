@@ -1,0 +1,8 @@
+setuptools
+-egit+git@gitlab.idiap.ch:bob/bob.extension.git#egg=bob.extension
+-egit+git@gitlab.idiap.ch:bob/bob.blitz.git#egg=bob.blitz
+-egit+git@gitlab.idiap.ch:bob/bob.core.git#egg=bob.core
+-egit+git@gitlab.idiap.ch:bob/bob.io.base.git#egg=bob.io.base
+-egit+git@gitlab.idiap.ch:bob/bob.io.image.git#egg=bob.io.image
+-egit+git@gitlab.idiap.ch:bob/bob.io.video.git#egg=bob.io.video
+-egit+git@gitlab.idiap.ch:bob/bob.db.base.git#egg=bob.db.base
