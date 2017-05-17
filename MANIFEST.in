@@ -1,2 +1,3 @@
 include README.rst LICENSE version.txt requirements.txt
 recursive-include doc *.py *.rst *.ico *.png
+include bob/db/swan/db.sql3

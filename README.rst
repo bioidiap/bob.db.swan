@@ -30,7 +30,8 @@ need to be obtained through the link above.
 Installation
 ------------
 
-Follow our `installation`_ instructions. Then, to install this pacakge, run::
+Complete Bob's `installation`_ instructions. Then, to install this pacakge,
+run::
 
   $ conda install bob.db.swan
 

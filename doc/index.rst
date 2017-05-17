@@ -19,5 +19,3 @@ Package Documentation
 .. automodule:: bob.db.swan
 .. automodule:: bob.db.swan.query
 .. automodule:: bob.db.swan.models
-
-
