@@ -5,7 +5,8 @@ from setuptools import setup, dist
 dist.Distribution(dict(setup_requires=['bob.extension']))
 
 # load the requirements.txt for additional requirements
-from bob.extension.utils import find_packages
+from bob.extension.utils import find_packages, load_requirements
+install_requires = load_requirements()
 
 setup(
     name='bob.db.swan',
@@ -27,16 +28,12 @@ setup(
     packages=find_packages('bob'),
     include_package_data=True,
 
-    install_requires=['bob.extension',
-                      'bob.blitz',
-                      'bob.io.base',
-                      'bob.io.image',
-                      'bob.io.video',
-                      'bob.db.base'],
+    install_requires=install_requires,
 
     entry_points={
 
         'bob.db': ['swan = bob.db.swan.driver:Interface'],
+        'bob.bio.database': ['swan = bob.db.swan.config:database'],
     },
 
     classifiers=[
