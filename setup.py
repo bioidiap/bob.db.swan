@@ -12,7 +12,7 @@ setup(
     version=open("version.txt").read().rstrip(),
     description='SWAN Database Access API for Bob',
 
-    url='',
+    url='https://gitlab.idiap.ch/bob/bob.db.swan',
     license='BSD',
     author='Amir Mohammadi',
     author_email='amir.mohammadi@idiap.ch',
@@ -37,10 +37,6 @@ setup(
     entry_points={
 
         'bob.db': ['swan = bob.db.swan.driver:Interface'],
-        'console_scripts': [
-            'bob_db_swan_generate_filelist = '
-            'bob.db.swan.script.generate_filelist:main',
-        ],
     },
 
     classifiers=[

@@ -4,9 +4,249 @@
 """This script creates the SWAN database in a single pass.
 """
 
-import os
-
 from .models import Client, File, Protocol, ProtocolPurpose, Base
+from collections import defaultdict
+from glob import glob
+import json
+import os
+from sqlalchemy import and_
+
+SITE_MAPPING = {
+    '1': 'NTNU',
+    '2': 'UIO',
+    '3': 'MPH-FRA',
+    '4': 'IDIAP',
+    '6': 'MPH-IND',
+}
+
+MODALITY_MAPPING = {
+    '1': 'face',
+    '2': 'voice',
+    '3': 'eye',
+    '4': 'finger',
+}
+
+DEVICE_MAPPING = {
+    'p': 'iPhone',
+    't': 'iPad',
+}
+
+SESSION1_DATAFORMAT = '''01 p 1.png:rear,4032x3024
+02 p 1.png:rear,4032x3024
+03 p 1.png:rear,4032x3024
+04 p 1.png:rear,4032x3024
+05 p 1.png:rear,4032x3024
+01 p 1.mp4:rear,1280x720,5s
+02 p 1.mp4:rear,1280x720,5s
+06 p 1.png:front,2576x1932
+07 p 1.png:front,2576x1932
+08 p 1.png:front,2576x1932
+09 p 1.png:front,2576x1932
+10 p 1.png:front,2576x1932
+03 p 1.mp4:front,1280x720,5s
+04 p 1.mp4:front,1280x720,5s
+01 t 1.png:rear,3264x2448
+02 t 1.png:rear,3264x2448
+03 t 1.png:rear,3264x2448
+04 t 1.png:rear,3264x2448
+05 t 1.png:rear,3264x2448
+01 t 1.mp4:rear,1280x720,5s
+02 t 1.mp4:rear,1280x720,5s
+06 t 1.png:front,1280x960
+07 t 1.png:front,1280x960
+08 t 1.png:front,1280x960
+09 t 1.png:front,1280x960
+10 t 1.png:front,1280x960
+03 t 1.mp4:front,1280x720,5s
+04 t 1.mp4:front,1280x720,5s
+01 p 2.mp4:front,1280x720
+02 p 2.mp4:front,1280x720
+03 p 2.mp4:front,1280x720
+04 p 2.mp4:front,1280x720
+05 p 2.mp4:front,1280x720
+06 p 2.mp4:front,1280x720
+07 p 2.mp4:front,1280x720
+08 p 2.mp4:front,1280x720
+01 t 2.mp4:front,1280x720
+02 t 2.mp4:front,1280x720
+03 t 2.mp4:front,1280x720
+04 t 2.mp4:front,1280x720
+05 t 2.mp4:front,1280x720
+06 t 2.mp4:front,1280x720
+07 t 2.mp4:front,1280x720
+08 t 2.mp4:front,1280x720
+01 p 3.png:rear,4032x3024
+02 p 3.png:rear,4032x3024
+03 p 3.png:rear,4032x3024
+04 p 3.png:rear,4032x3024
+05 p 3.png:rear,4032x3024
+01 p 3.mp4:rear,1280x720,5s
+02 p 3.mp4:rear,1280x720,5s
+06 p 3.png:front,2576x1932
+07 p 3.png:front,2576x1932
+08 p 3.png:front,2576x1932
+09 p 3.png:front,2576x1932
+10 p 3.png:front,2576x1932
+03 p 3.mp4:front,1280x720,5s
+04 p 3.mp4:front,1280x720,5s
+01 t 3.png:rear,3264x2448
+02 t 3.png:rear,3264x2448
+03 t 3.png:rear,3264x2448
+04 t 3.png:rear,3264x2448
+05 t 3.png:rear,3264x2448
+01 t 3.mp4:rear,1280x720,5s
+02 t 3.mp4:rear,1280x720,5s
+06 t 3.png:front,1280x960
+07 t 3.png:front,1280x960
+08 t 3.png:front,1280x960
+09 t 3.png:front,1280x960
+10 t 3.png:front,1280x960
+03 t 3.mp4:front,1280x720,5s
+04 t 3.mp4:front,1280x720,5s
+01 p 4.png:rear,4032x3024
+02 p 4.png:rear,4032x3024
+03 p 4.png:rear,4032x3024
+04 p 4.png:rear,4032x3024
+05 p 4.png:rear,4032x3024
+01 p 4.mp4:rear,1280x720,5s
+02 p 4.mp4:rear,1280x720,5s
+06 p 4.png:rear,4032x3024
+07 p 4.png:rear,4032x3024
+08 p 4.png:rear,4032x3024
+09 p 4.png:rear,4032x3024
+10 p 4.png:rear,4032x3024
+03 p 4.mp4:rear,1280x720,5s
+04 p 4.mp4:rear,1280x720,5s
+11 p 4.png:rear,4032x3024
+12 p 4.png:rear,4032x3024
+13 p 4.png:rear,4032x3024
+14 p 4.png:rear,4032x3024
+15 p 4.png:rear,4032x3024
+05 p 4.mp4:rear,1280x720,5s
+06 p 4.mp4:rear,1280x720,5s
+16 p 4.png:rear,4032x3024
+17 p 4.png:rear,4032x3024
+18 p 4.png:rear,4032x3024
+19 p 4.png:rear,4032x3024
+20 p 4.png:rear,4032x3024
+07 p 4.mp4:rear,1280x720,5s
+08 p 4.mp4:rear,1280x720,5s
+01 t 4.png:rear,3264x2448
+02 t 4.png:rear,3264x2448
+03 t 4.png:rear,3264x2448
+04 t 4.png:rear,3264x2448
+05 t 4.png:rear,3264x2448
+01 t 4.mp4:rear,1280x720,5s
+02 t 4.mp4:rear,1280x720,5s
+06 t 4.png:rear,3264x2448
+07 t 4.png:rear,3264x2448
+08 t 4.png:rear,3264x2448
+09 t 4.png:rear,3264x2448
+10 t 4.png:rear,3264x2448
+03 t 4.mp4:rear,1280x720,5s
+04 t 4.mp4:rear,1280x720,5s
+11 t 4.png:rear,3264x2448
+12 t 4.png:rear,3264x2448
+13 t 4.png:rear,3264x2448
+14 t 4.png:rear,3264x2448
+15 t 4.png:rear,3264x2448
+05 t 4.mp4:rear,1280x720,5s
+06 t 4.mp4:rear,1280x720,5s
+16 t 4.png:rear,3264x2448
+17 t 4.png:rear,3264x2448
+18 t 4.png:rear,3264x2448
+19 t 4.png:rear,3264x2448
+20 t 4.png:rear,3264x2448
+07 t 4.mp4:rear,1280x720,5s
+08 t 4.mp4:rear,1280x720,5s
+'''
+
+SESSION2_DATAFORMAT = '''01 p 1.mp4:front,1280x720,5s
+02 p 1.mp4:front,1280x720,5s
+01 p 2.mp4:front,1280x720
+02 p 2.mp4:front,1280x720
+03 p 2.mp4:front,1280x720
+04 p 2.mp4:front,1280x720
+05 p 2.mp4:front,1280x720
+06 p 2.mp4:front,1280x720
+07 p 2.mp4:front,1280x720
+08 p 2.mp4:front,1280x720
+01 p 3.png:rear,4032x3024
+02 p 3.png:rear,4032x3024
+03 p 3.png:rear,4032x3024
+04 p 3.png:rear,4032x3024
+05 p 3.png:rear,4032x3024
+01 p 3.mp4:rear,1280x720,5s
+02 p 3.mp4:rear,1280x720,5s
+06 p 3.png:front,2576x1932
+07 p 3.png:front,2576x1932
+08 p 3.png:front,2576x1932
+09 p 3.png:front,2576x1932
+10 p 3.png:front,2576x1932
+03 p 3.mp4:front,1280x720,5s
+04 p 3.mp4:front,1280x720,5s
+01 p 4.png:rear,4032x3024
+02 p 4.png:rear,4032x3024
+03 p 4.png:rear,4032x3024
+04 p 4.png:rear,4032x3024
+05 p 4.png:rear,4032x3024
+01 p 4.mp4:rear,1280x720,5s
+02 p 4.mp4:rear,1280x720,5s
+06 p 4.png:rear,4032x3024
+07 p 4.png:rear,4032x3024
+08 p 4.png:rear,4032x3024
+09 p 4.png:rear,4032x3024
+10 p 4.png:rear,4032x3024
+03 p 4.mp4:rear,1280x720,5s
+04 p 4.mp4:rear,1280x720,5s
+11 p 4.png:rear,4032x3024
+12 p 4.png:rear,4032x3024
+13 p 4.png:rear,4032x3024
+14 p 4.png:rear,4032x3024
+15 p 4.png:rear,4032x3024
+05 p 4.mp4:rear,1280x720,5s
+06 p 4.mp4:rear,1280x720,5s
+16 p 4.png:rear,4032x3024
+17 p 4.png:rear,4032x3024
+18 p 4.png:rear,4032x3024
+19 p 4.png:rear,4032x3024
+20 p 4.png:rear,4032x3024
+07 p 4.mp4:rear,1280x720,5s
+08 p 4.mp4:rear,1280x720,5s
+'''
+
+KNOWLEDGE = {
+    '01': {'total': 128, 'video': 24, 'image': 40, 'device': ['p', 't']},
+    '02': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+    '03': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+    '04': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+    '05': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+    '06': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+    '07': {'total': 52, 'video': 22, 'image': 30, 'device': ['p']},
+}
+
+
+def parse_data_format(lines):
+    data_format = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+    for line in lines.split('\n'):
+        if not line:
+            continue
+        nrecording, device, biometrics = line.split()
+        biometrics, extension = biometrics.split('.')
+        extension, data = extension.split(':')
+        data = data.split(',')
+        data_format[device][biometrics][extension][nrecording] = data
+    return json.loads(json.dumps(data_format))
+
+
+KNOWLEDGE['01']['data'] = parse_data_format(SESSION1_DATAFORMAT)
+__session2_data_format_loaded = parse_data_format(SESSION2_DATAFORMAT)
+KNOWLEDGE['02']['data'] = __session2_data_format_loaded
+KNOWLEDGE['03']['data'] = __session2_data_format_loaded
+KNOWLEDGE['04']['data'] = __session2_data_format_loaded
+KNOWLEDGE['05']['data'] = __session2_data_format_loaded
+KNOWLEDGE['06']['data'] = __session2_data_format_loaded
 
 
 def nodot(item):
@@ -14,168 +254,127 @@ def nodot(item):
     return item[0] != '.'
 
 
-def add_clients_and_files(sql_session, datadir, extensions, verbose):
+def add_clients_and_files(sql_session, datadir, verbose):
     """Add files to the SWAN database."""
 
-    def add_file(session, datadir, location, client_id_dir, session_device, basename, verbose):
+    client_dict = {}
+
+    def add_file(sql_session, fullpath, verbose):
         """Parse a single filename and add it to the list.
-             Also add a client entry if not already in the database."""
-        v = os.path.splitext(basename)[0].split('_')
-        bname = os.path.splitext(basename)[0]
+        Also add a client entry if not already in the database.
+        Example: IDIAP/session_01/iPhone/00001/4_00001_m_01_01_p_1.mp4
+
+        """
+        basename = os.path.basename(fullpath)
+        site, identity, gender, session, nrecording, device, biometrics = \
+            basename.split('_')
+        biometrics, extension = biometrics.split('.')
+
+        try:
+            camera = KNOWLEDGE[session]['data'][
+                device][biometrics][extension][nrecording]
+        except KeyError:
+            print('File found but not in KNOWLEDGE! {}'.format(fullpath))
+            return
+        camera = camera[0]
+        modality = MODALITY_MAPPING[biometrics]
+        site = SITE_MAPPING[site]
+        device = DEVICE_MAPPING[device]
+
+        if extension == 'mp4':
+            recording = 'video'
+        elif extension == 'png':
+            recording = 'photo'
+        else:
+            raise RuntimeError('Unknown file extension {}'.format(extension))
+
         full_bname = os.path.join(
-            location, client_id_dir, session_device, bname)
+            site, 'session_{}'.format(session), device, identity,
+            basename)
 
-        gender = ''
-        if v[0][0] == 'm':
+        if gender == 'm':
             gender = 'male'
-        if v[0][0] == 'f':
+        elif gender == 'f':
             gender = 'female'
-        institute = int(v[0][1])
-        institute_dir = ''
-        if institute == 0:
-            institute = 'idiap'
-            institute_dir = 'idiap'
-        elif institute == 1:
-            institute = 'manchester'
-            institute_dir = 'uman'
-        elif institute == 2:
-            institute = 'surrey'
-            institute_dir = 'unis'
-        elif institute == 3:
-            institute = 'oulu'
-            institute_dir = 'uoulu'
-        elif institute == 4:
-            institute = 'brno'
-            institute_dir = 'but'
-        elif institute == 5:
-            institute = 'avignon'
-            institute_dir = 'lia'
-        if institute_dir != location:
-            error_msg = "File: %s -- Find location %s in directory of location %s!" % (
-                full_bname, location, institute_dir)
-            raise RuntimeError(error_msg)
-        client_id = v[0][1:4]
-        if v[0][0:4] != client_id_dir:
-            error_msg = "File: %s -- Find identity %s in directory of identity %s!" % (
-                full_bname, v[0][0:4], client_id)
-            raise RuntimeError(error_msg)
-        if not (client_id in client_dict):
-            if (institute == 'surrey' or institute == 'avignon'):
-                group = 'world'
-            elif (institute == 'manchester' or institute == 'oulu'):
-                group = 'dev'
-            elif (institute == 'idiap' or institute == 'brno'):
-                group = 'eval'
+        else:
+            raise RuntimeError('Unknown gender {}'.format(gender))
+
+        # identify the group of this identity
+        identity = int(identity)
+        if identity < 25:
+            group = 'world'
+        elif identity < 41:
+            group = 'dev'
+        elif identity < 61:
+            group = 'eval'
+        else:
+            raise RuntimeError('Unknown IDIAP identity {}'.format(identity))
+
+        # check if the client has been added yet.
+        client_key = (identity, site)
+        if client_key not in client_dict:
             if verbose > 1:
-                print("  Adding client %d..." % int(client_id))
-            session.add(Client(int(client_id), group, gender, institute))
-            client_dict[client_id] = True
-
-        w = session_device.split('_')
-        session_id_from_dir = int(w[0])
-        device_from_dir = w[1]
-
-        session_id = int(v[1])
-        speech_type = v[2][0]
-        shot_id = v[2][1:3]
-        environment = v[3][0]
-        device = v[3][1]
-        if(device == '0'):
-            device = 'mobile'
-        elif(device == '1'):
-            device = 'laptop'
-        if device != device_from_dir:
-            error_msg = "File: %s -- Find device %s in directory of device %s!" % (
-                full_bname, device, device_from_dir)
-            raise RuntimeError(error_msg)
-        if session_id != session_id_from_dir:
-            error_msg = "File: %s -- Find session_id %d in directory of session_id %d!" % (
-                full_bname, session_id, session_id_from_dir)
-            raise RuntimeError(error_msg)
-        channel = int(v[4][0])
-
+                print("    Adding client {}, {}...".format(site, identity))
+            client = Client(identity, group, gender, site)
+            sql_session.add(client)
+            # sql_session.flush()
+            # sql_session.refresh(client)
+            client_dict[client_key] = True
+        else:
+            client = sql_session.query(Client).filter(
+                and_(Client.orig_id == identity,
+                     Client.institute == site)).one()
         if verbose > 1:
             print("    Adding file '%s'..." % full_bname)
-        session.add(File(int(client_id), full_bname, session_id,
-                         speech_type, shot_id, environment, device, channel))
+        sql_session.add(File(full_bname, client, int(session), device,
+                             modality, camera, recording, int(nrecording)))
 
-    client_dict = {}
     if verbose:
         print("Adding clients and files ...")
-    for location in filter(nodot, os.listdir(datadir)):
-        location_dir = os.path.join(datadir, location)
-        if os.path.isdir(location_dir):
-            for client_id in filter(nodot, os.listdir(location_dir)):
-                client_dir = os.path.join(location_dir, client_id)
-                if os.path.isdir(client_dir):
-                    for session_device in filter(nodot, os.listdir(client_dir)):
-                        session_device_dir = os.path.join(
-                            client_dir, session_device)
-                        if os.path.isdir(session_device_dir):
-                            for filename in filter(nodot, os.listdir(session_device_dir)):
-                                for ext in extensions:
-                                    if filename.endswith(ext):
-                                        add_file(sql_session, datadir, location, client_id, session_device, os.path.basename(
-                                            filename), verbose)
+    # files = open('files.txt').read().split()
+    files = []
+    for _, site in SITE_MAPPING.items():
+        files += glob(os.path.join(datadir, site, '*', '*', '*', '*.mp4'))
+        files += glob(os.path.join(datadir, site, '*', '*', '*', '*.png'))
+    for fullpath in files:
+        add_file(sql_session, fullpath, verbose)
 
 
 def add_protocols(session, verbose):
     """Adds protocols"""
 
     # 1. DEFINITIONS
-    # Numbers in the lists correspond to session identifiers
-    protocol_definitions = {}
+    mobile_tablet = ('iPhone', 'iPad')
+    mobile = ('iPhone',)
+    ididap_clients = list(range(1, 61))
+    non_idiap_clients = [7, 8, 9, 23, 37, 44, 45, 53, 56, 57]
+    ididap_clients = [x for x in ididap_clients if x not in non_idiap_clients]
 
-    # Split male and female clients: list of (client_id, first_session_id) #
-    # few exceptions with 2 as first session
-    clients_male = [(1, 1), (2, 1), (4, 1), (8, 1), (11, 1), (12, 1), (15, 1), (16, 1), (17, 1), (19, 2),
-                    (21, 1), (23, 1), (24, 1), (25, 1), (26,
-                                                         1), (28, 1), (29, 1), (30, 1), (31, 1), (33, 1),
-                    (34, 1), (103, 1), (104, 1), (106, 1), (107,
-                                                            1), (108, 1), (109, 1), (111, 1), (112, 1), (114, 1),
-                    (115, 1), (116, 1), (117, 1), (119, 1), (120,
-                                                             1), (301, 1), (304, 1), (305, 1), (308, 1), (310, 1),
-                    (313, 1), (314, 1), (315, 1), (317, 1), (319,
-                                                             1), (416, 1), (417, 1), (418, 1), (419, 1), (420, 1),
-                    (421, 1), (422, 1), (423, 1), (424, 1), (425,
-                                                             1), (426, 1), (427, 1), (428, 1), (429, 1), (430, 1),
-                    (431, 1), (432, 1)]
-    clients_female = [(7, 2), (9, 1), (10, 1), (22, 1), (32, 1), (118, 1), (122, 1), (123, 1), (125, 1), (126, 1),
-                      (127, 1), (128, 1), (129, 1), (130, 1), (131,
-                                                               1), (133, 1), (302, 1), (303, 1), (306, 1), (307, 1),
-                      (309, 1), (311, 1), (320, 1), (401, 1), (402,
-                                                               1), (403, 1), (404, 1), (405, 2), (406, 1), (407, 1),
-                      (408, 1), (409, 1), (410, 1), (411, 1), (412, 1), (413, 1), (415, 1), (433, 1)]
-    train_mobile = ['mobile']
-    train_all = None
-    enroll_laptop = [['laptop'], ['p']]
-    enroll_mobile = [['mobile'], ['p']]
-    enroll_laptop_mobile = [['laptop', 'mobile'], ['p']]
-    probe = [['mobile'], ['r', 'f']]
-    gender_male = 'male'
-    gender_female = 'female'
-    protocol_definitions['mobile0-male'] = [clients_male,
-                                            train_mobile, enroll_mobile, probe, gender_male]
-    protocol_definitions['mobile0-female'] = [clients_female,
-                                              train_mobile, enroll_mobile, probe, gender_female]
-    protocol_definitions['mobile1-male'] = [clients_male,
-                                            train_all, enroll_mobile, probe, gender_male]
-    protocol_definitions['mobile1-female'] = [clients_female,
-                                              train_all, enroll_mobile, probe, gender_female]
-    protocol_definitions['laptop1-male'] = [clients_male,
-                                            train_all, enroll_laptop, probe, gender_male]
-    protocol_definitions['laptop1-female'] = [clients_female,
-                                              train_all, enroll_laptop, probe, gender_female]
-    protocol_definitions['laptop_mobile1-male'] = [clients_male,
-                                                   train_all, enroll_laptop_mobile, probe, gender_male]
-    protocol_definitions['laptop_mobile1-female'] = [clients_female,
-                                                     train_all, enroll_laptop_mobile, probe, gender_female]
+    # Numbers in the lists correspond to session identifiers
+    protocol_definitions = defaultdict(lambda: defaultdict(dict))
+    protocol_definitions['idiap0-audio']['world']['train'] = \
+        (mobile_tablet, [x for x in ididap_clients if x < 25],
+         ('voice',), ('front',), ('video',), tuple(range(1, 7)), ('IDIAP', ))
+    protocol_definitions['idiap0-audio']['dev']['enroll'] = \
+        (mobile, [x for x in ididap_clients if (x >= 25) and (x < 41)],
+         ('voice',), ('front',), ('video',), tuple(range(1, 2)), ('IDIAP', ))
+    protocol_definitions['idiap0-audio']['dev']['probe'] = \
+        (mobile, [x for x in ididap_clients if (x >= 25) and (x < 41)],
+         ('voice',), ('front',), ('video',), tuple(range(2, 7)), ('IDIAP', ))
+    protocol_definitions['idiap0-audio']['eval']['enroll'] = \
+        (mobile, [x for x in ididap_clients if (x >= 41) and (x < 61)],
+         ('voice',), ('front',), ('video',), tuple(range(1, 2)), ('IDIAP', ))
+    protocol_definitions['idiap0-audio']['eval']['probe'] = \
+        (mobile, [x for x in ididap_clients if (x >= 41) and (x < 61)],
+         ('voice',), ('front',), ('video',), tuple(range(2, 7)), ('IDIAP', ))
 
     # 2. ADDITIONS TO THE SQL DATABASE
-    protocolPurpose_list = [('world', 'train'), ('dev', 'enroll'),
-                            ('dev', 'probe'), ('eval', 'enroll'), ('eval', 'probe')]
+    protocolPurpose_list = [
+        ('world', 'train'), ('dev', 'enroll'), ('dev', 'probe'),
+        ('eval', 'enroll'), ('eval', 'probe')]
+
     for proto in protocol_definitions:
-        p = Protocol(proto, protocol_definitions[proto][4])
+        p = Protocol(proto)
         # Add protocol
         if verbose:
             print("Adding protocol '%s'..." % (proto))
@@ -184,81 +383,48 @@ def add_protocols(session, verbose):
         session.refresh(p)
 
         # Add protocol purposes
-        for key in range(len(protocolPurpose_list)):
-            purpose = protocolPurpose_list[key]
-            pu = ProtocolPurpose(p.id, purpose[0], purpose[1])
+        for group, purpose in protocolPurpose_list:
+            pu = ProtocolPurpose(p.id, group, purpose)
             if verbose > 1:
                 print("  Adding protocol purpose ('%s','%s')..." %
-                      (purpose[0], purpose[1]))
+                      (group, purpose))
             session.add(pu)
             session.flush()
             session.refresh(pu)
 
-            # Add files attached with this protocol purpose
-            client_group = ""
-            device_list = []
-            speech_list = []
-            if(key == 0):
-                client_group = "world"
-            elif(key == 1 or key == 2):
-                client_group = "dev"
-            elif(key == 3 or key == 4):
-                client_group = "eval"
-            if(key == 0):
-                world_list = True
-                session_list_in = False
-                device_list = protocol_definitions[proto][1]
-            if(key == 1 or key == 3):
-                world_list = False
-                session_list_in = True
-                device_list = protocol_definitions[proto][2][0]
-                speech_list = protocol_definitions[proto][2][1]
-            elif(key == 2 or key == 4):
-                world_list = False
-                session_list_in = False
-                device_list = protocol_definitions[proto][3][0]
-                speech_list = protocol_definitions[proto][3][1]
+            # get the list of files for that group
+            q = session.query(File).join(Client).filter(
+                Client.sgroup == group).order_by(File.id)
+
+            device_list = protocol_definitions[proto][group][purpose][0]
+            if device_list:
+                q = q.filter(File.device.in_(device_list))
+
+            modality_list = protocol_definitions[proto][group][purpose][2]
+            if modality_list:
+                q = q.filter(File.modality.in_(modality_list))
+
+            camera_list = protocol_definitions[proto][group][purpose][3]
+            if camera_list:
+                q = q.filter(File.camera.in_(camera_list))
+
+            recording_list = protocol_definitions[proto][group][purpose][4]
+            if recording_list:
+                q = q.filter(File.recording.in_(recording_list))
+
+            session_list = protocol_definitions[proto][group][purpose][5]
+            if session_list:
+                q = q.filter(File.session.in_(session_list))
+
+            institute_list = protocol_definitions[proto][group][purpose][6]
+            if institute_list:
+                q = q.filter(Client.institute.in_(institute_list))
 
             # Adds 'protocol' files
-            # World set
-            if world_list:
-                q = session.query(File).join(Client).filter(
-                    Client.sgroup == 'world').order_by(File.id)
-                if device_list:
-                    q = q.filter(File.device.in_(device_list))
-                for k in q:
-                    if verbose > 1:
-                        print("    Adding protocol file '%s'..." % (k.path))
-                    pu.files.append(k)
-            # Dev/eval set
-            else:
-                for client in protocol_definitions[proto][0]:
-                    cid = client[0]  # client id
-                    sid = client[1]  # session id
-                    q = session.query(File).join(Client).\
-                        filter(Client.sgroup == client_group).filter(
-                            Client.id == cid)
-                    if session_list_in:
-                        q = q.filter(File.session_id == sid)
-                    else:
-                        q = q.filter(File.session_id != sid)
-                    if device_list:
-                        q = q.filter(File.device.in_(device_list))
-                    if speech_list:
-                        q = q.filter(File.speech_type.in_(speech_list))
-                    q = q.order_by(File.id)
-                    for k in q:
-                        if verbose > 1:
-                            print("    Adding protocol file '%s'..." %
-                                  (k.path))
-                        pu.files.append(k)
-
-        # Add protocol
-        speech_type = ['p', 'l', 'r', 'f']
-        mobile_only = False
-        if 'mobile0' in proto:
-            mobile_only = True
-        add_tmodels(session, p.id, mobile_only, speech_type, verbose)
+            for k in q:
+                if verbose > 1:
+                    print("    Adding protocol file '%s'..." % (k.path))
+                pu.files.append(k)
 
 
 def create_tables(args):
@@ -293,7 +459,7 @@ def create(args):
     # the real work...
     create_tables(args)
     s = session_try_nolock(args.type, args.files[0], echo=(args.verbose > 2))
-    add_files(s, args.datadir, args.extensions, args.verbose)
+    add_clients_and_files(s, args.datadir, args.verbose)
     add_protocols(s, args.verbose)
     s.commit()
     s.close()

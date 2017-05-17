@@ -12,3 +12,4 @@ develop-eggs
 sphinx
 dist
 conda
+*.sql3
