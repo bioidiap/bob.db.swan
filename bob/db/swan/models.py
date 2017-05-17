@@ -48,8 +48,9 @@ class Client(Base):
         self.institute = institute
 
     def __repr__(self):
-        return "Client(id={}, orig_id={}, group={}, institute={})".format(
-            self.id, self.sgroup, self.gender, self.institute)
+        return "Client(id={}, orig_id={}, group={}, gender={}, institute={})"\
+            .format(self.id, self.orig_id, self.sgroup, self.gender,
+                    self.institute)
 
 
 class File(Base, bob.db.base.File):

@@ -21,10 +21,10 @@ def test_idiap0_audio():
     assert set(f.client.institute for f in files) == set(['IDIAP'])
     assert all(f.client.orig_id < 25 for f in files)
     files = db.objects(protocol=protocol, groups='dev', purposes='enroll')
-    assert len(files) == 15 * 8 * 1 * 1, len(files)
+    assert len(files) == 15 * 8 * 2 * 1, len(files)
     assert len(set(f.client.id for f in files)) == 15
     assert len(set(f.nrecording for f in files)) == 8
-    assert len(set(f.device for f in files)) == 1
+    assert len(set(f.device for f in files)) == 2
     assert all(f.session == 1 for f in files)
     assert set(f.client.institute for f in files) == set(['IDIAP'])
     assert all(f.client.orig_id >= 25 and f.client.orig_id < 41 for f in files)
@@ -38,10 +38,10 @@ def test_idiap0_audio():
     assert set(f.client.institute for f in files) == set(['IDIAP'])
     assert all(f.client.orig_id >= 25 and f.client.orig_id < 41 for f in files)
     files = db.objects(protocol=protocol, groups='eval', purposes='enroll')
-    assert len(files) == 15 * 8 * 1 * 1, len(files)
+    assert len(files) == 15 * 8 * 2 * 1, len(files)
     assert len(set(f.client.id for f in files)) == 15
     assert len(set(f.nrecording for f in files)) == 8
-    assert len(set(f.device for f in files)) == 1
+    assert len(set(f.device for f in files)) == 2
     assert all(f.session == 1 for f in files)
     assert set(f.client.institute for f in files) == set(['IDIAP'])
     assert all(f.client.orig_id >= 41 and f.client.orig_id < 61 for f in files)
@@ -54,3 +54,12 @@ def test_idiap0_audio():
     assert all(f.session > 1 for f in files)
     assert set(f.client.institute for f in files) == set(['IDIAP'])
     assert all(f.client.orig_id >= 41 and f.client.orig_id < 61 for f in files)
+
+    model_ids = db.model_ids_with_protocol(groups='world', protocol=protocol)
+    assert len(model_ids) == 20, len(model_ids)
+    model_ids = db.model_ids_with_protocol(groups='dev', protocol=protocol)
+    assert len(model_ids) == 15, len(model_ids)
+    model_ids = db.model_ids_with_protocol(groups='eval', protocol=protocol)
+    assert len(model_ids) == 15, len(model_ids)
+
+    assert db.annotations(files[0]) is None
