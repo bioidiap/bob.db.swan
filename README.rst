@@ -13,8 +13,6 @@
    :target: https://gitlab.idiap.ch/bob/bob.db.swan
 .. image:: http://img.shields.io/pypi/v/bob.db.swan.svg
    :target: https://pypi.python.org/pypi/bob.db.swan
-.. image:: http://img.shields.io/pypi/dm/bob.db.swan.svg
-   :target: https://pypi.python.org/pypi/bob.db.swan
 
 
 ==================================
