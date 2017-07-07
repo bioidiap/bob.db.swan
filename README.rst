@@ -2,9 +2,9 @@
 .. Fri May  5 11:35:14 CEST 2017
 
 .. image:: http://img.shields.io/badge/docs-stable-yellow.svg
-   :target: http://pythonhosted.org/bob.db.swan/index.html
+   :target: http://beatubulatest.lab.idiap.ch/private/docs/bob/bob.db.swan/stable/index.html
 .. image:: http://img.shields.io/badge/docs-latest-orange.svg
-   :target: https://www.idiap.ch/software/bob/docs/latest/bob/bob.db.swan/master/index.html
+   :target: http://beatubulatest.lab.idiap.ch/private/docs/bob/bob.db.swan/master/index.html
 .. image:: https://gitlab.idiap.ch/bob/bob.db.swan/badges/master/build.svg
    :target: https://gitlab.idiap.ch/bob/bob.db.swan/commits/master
 .. image:: https://gitlab.idiap.ch/bob/bob.db.swan/badges/master/coverage.svg
@@ -12,8 +12,6 @@
 .. image:: https://img.shields.io/badge/gitlab-project-0000c0.svg
    :target: https://gitlab.idiap.ch/bob/bob.db.swan
 .. image:: http://img.shields.io/pypi/v/bob.db.swan.svg
-   :target: https://pypi.python.org/pypi/bob.db.swan
-.. image:: http://img.shields.io/pypi/dm/bob.db.swan.svg
    :target: https://pypi.python.org/pypi/bob.db.swan
 
 
@@ -30,7 +28,7 @@ need to be obtained through the link above.
 Installation
 ------------
 
-Complete Bob's `installation`_ instructions. Then, to install this pacakge,
+Complete Bob's `installation`_ instructions. Then, to install this package,
 run::
 
   $ conda install bob.db.swan
