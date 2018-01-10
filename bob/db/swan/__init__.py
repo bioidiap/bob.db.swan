@@ -1,4 +1,4 @@
-from .query import Database, SwanAudioBioFile, SwanVideoBioFile
+from .query_bio import Database, SwanAudioBioFile, SwanVideoBioFile
 
 
 def __appropriate__(*args):
