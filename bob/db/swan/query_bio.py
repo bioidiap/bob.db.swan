@@ -66,7 +66,7 @@ class Database(bob.bio.base.database.FileListBioDatabase):
                  bio_file_class=SwanAudioBioFile, name='swan', **kwargs):
         # call base class constructor
         from pkg_resources import resource_filename
-        folder = resource_filename(__name__, 'lists/bio')
+        folder = resource_filename(__name__, 'lists')
         super(Database, self).__init__(
             folder, name=name, bio_file_class=bio_file_class,
             original_directory=original_directory,
