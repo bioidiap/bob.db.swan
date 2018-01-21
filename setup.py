@@ -31,8 +31,11 @@ setup(
     install_requires=install_requires,
 
     entry_points={
-        'bob.bio.database': ['swan-audio = bob.db.swan.config_audio:database'],
-        'bob.bio.database': ['swan-video = bob.db.swan.config_video:database'],
+        'bob.db': ['swan = bob.db.swan.driver:Interface'],
+        'bob.bio.database': [
+            'swan-voice = bob.db.swan.config_voice:database',
+            'swan-video = bob.db.swan.config_video:database',
+        ],
     },
 
     classifiers=[
