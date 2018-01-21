@@ -7,6 +7,7 @@ import bob.bio.base
 import bob.io.base
 import bob.io.video
 import numpy as np
+from bob.extension import rc
 from .common import swan_bio_file_metadata, read_audio
 
 
@@ -62,7 +63,7 @@ class Database(bob.bio.base.database.FileListBioDatabase):
     three main parts.
     """
 
-    def __init__(self, original_directory=None,
+    def __init__(self, original_directory=rc['bob.db.swan.directory'],
                  bio_file_class=SwanAudioBioFile, name='swan', **kwargs):
         # call base class constructor
         from pkg_resources import resource_filename
