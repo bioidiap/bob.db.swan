@@ -71,5 +71,7 @@ class Database(bob.bio.base.database.FileListBioDatabase):
         super(Database, self).__init__(
             folder, name=name, bio_file_class=bio_file_class,
             original_directory=original_directory,
+            training_depends_on_protocol=True,
+            models_depend_on_protocol=True,
             **kwargs
         )
