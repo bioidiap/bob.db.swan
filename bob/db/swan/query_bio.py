@@ -43,17 +43,66 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
     def __init__(self, **kwargs):
         super(SwanVideoBioFile, self).__init__(**kwargs)
 
+    def swap(self, data):
+        # rotate the video or image since SWAN videos are not upright!
+        return np.swapaxes(data, -2, -1)
+
     def load(self, directory=None, extension=None,
              frame_selector=FrameSelector(selection_style='all')):
         if extension is None:
-            video_path = self.make_path(directory, extension)
+            video_path = self.make_path(directory or self.original_directory,
+                                        extension)
             video = bob.io.base.load(video_path)
-            # rotate the video since SWAN videos are not upright!
-            video = np.swapaxes(video, -2, -1)
+            video = self.swap(video)
             return frame_selector(video)
         else:
             return super(SwanVideoBioFile, self).load(
                 directory, extension, frame_selector)
+
+    def frames(self):
+        """Yields the frames of the biofile one by one.
+
+        Parameters
+        ----------
+        biofile : :any:`SwanVideoBioFile`
+            The high-level bio file
+
+        Yields
+        ------
+        :any:`numpy.array`
+            A frame of the video. The size is (3, 1280, 720).
+        """
+        vfilename = self.make_path(directory=self.original_directory)
+        reader = bob.io.video.reader(vfilename)
+        for frame in reader:
+            yield self.swap(frame)
+
+    def number_of_frames(self):
+        """Returns the number of frames in a video file.
+
+        Parameters
+        ----------
+        biofile : :any:`SwanVideoBioFile`
+            The high-level bio file
+
+        Returns
+        -------
+        int
+            The number of frames.
+        """
+        vfilename = self.make_path(directory=self.original_directory)
+        return bob.io.video.reader(vfilename).number_of_frames
+
+    @property
+    def frame_shape(self):
+        """Returns the size of each frame in this database.
+
+        Returns
+        -------
+        (int, int, int)
+            The (#Channels, Height, Width) which is (3, 1920, 1080).
+        """
+        return (3, 1280, 720)
 
 
 class Database(bob.bio.base.database.FileListBioDatabase):
@@ -75,3 +124,17 @@ class Database(bob.bio.base.database.FileListBioDatabase):
             models_depend_on_protocol=True,
             **kwargs
         )
+
+    def objects(self, groups=None, protocol=None, purposes=None,
+                model_ids=None, classes=None, **kwargs):
+        files = super(Database, self).objects(
+            groups=groups, protocol=protocol, purposes=purposes,
+            model_ids=model_ids, classes=classes, **kwargs)
+        for f in files:
+            f.original_directory = self.original_directory
+        return files
+
+
+def load_frames(biofile, directory, extension):
+    for frame in biofile.frames():
+        yield frame
