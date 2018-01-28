@@ -113,15 +113,21 @@ class Database(bob.bio.base.database.FileListBioDatabase):
     """
 
     def __init__(self, original_directory=rc['bob.db.swan.directory'],
-                 bio_file_class=SwanAudioBioFile, name='swan', **kwargs):
+                 bio_file_class=SwanAudioBioFile,
+                 annotation_directory=rc['bob.db.swan.annotation_dir'],
+                 annotation_extension='.json',
+                 annotation_type='json',
+                 name='swan', **kwargs):
         # call base class constructor
         from pkg_resources import resource_filename
         folder = resource_filename(__name__, 'lists')
         super(Database, self).__init__(
             folder, name=name, bio_file_class=bio_file_class,
+            annotation_directory=annotation_directory,
+            annotation_extension=annotation_extension,
+            annotation_type=annotation_type,
             original_directory=original_directory,
-            training_depends_on_protocol=True,
-            models_depend_on_protocol=True,
+            training_depends_on_protocol=True, models_depend_on_protocol=True,
             **kwargs
         )
 
