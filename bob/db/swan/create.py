@@ -3,6 +3,7 @@ from os.path import join, dirname, abspath, sep
 from glob import glob
 import random
 import pkg_resources
+from bob.extension import rc
 from bob.io.base import create_directories_safe
 from .common import swan_bio_file_metadata
 
@@ -19,47 +20,47 @@ def create_subparser(subparsers):
     parser = subparsers.add_parser(
         'create', help="Creates the PAD file lists of the dataset.")
     parser.add_argument(
-        '-d', '--directory',
+        '-d', '--directory', default=rc['bob.db.swan.directory'],
         help="The path to the root directory of raw database")
     parser.set_defaults(func=_create)  # action
 
 
 PAD_PROTOCOLS = OrderedDefaultDict(
     lambda: OrderedDefaultDict(OrderedDefaultDict))
-PAD_PROTOCOLS['PA.F.1']['attack']['train'] = ([1], 76, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['attack']['dev'] = ([1], 30, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['attack']['eval'] = ([1], 46, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['train'] = ([2], 76, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['dev'] = ([2], 30, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['eval'] = ([2, 3, 4, 5, 6], 46, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['attack']['train'] = ([1], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['attack']['dev'] = ([1], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['attack']['eval'] = ([1], .3, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['real']['train'] = ([2], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['real']['dev'] = ([2], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.1']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 
-PAD_PROTOCOLS['PA.F.5']['attack']['train'] = ([1], 604, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['attack']['dev'] = ([1], 242, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['attack']['eval'] = ([1], 362, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['train'] = ([2], 604, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['dev'] = ([2], 242, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['eval'] = ([2, 3, 4, 5, 6], 362, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['attack']['train'] = ([1], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['attack']['dev'] = ([1], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['attack']['eval'] = ([1], .3, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['real']['train'] = ([2], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['real']['dev'] = ([2], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.5']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 
-PAD_PROTOCOLS['PA.F.6']['attack']['train'] = ([1], 580, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['attack']['dev'] = ([1], 232, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['attack']['eval'] = ([1], 348, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['train'] = ([2], 580, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['dev'] = ([2], 232, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['eval'] = ([2, 3, 4, 5, 6], 348, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['attack']['train'] = ([1], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['attack']['dev'] = ([1], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['attack']['eval'] = ([1], .3, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['real']['train'] = ([2], .5, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['real']['dev'] = ([2], .2, 'iPhone')
+PAD_PROTOCOLS['PA.F.6']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 
-PAD_PROTOCOLS['PA.V.4']['attack']['train'] = ([1], 436, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['attack']['dev'] = ([1], 174, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['attack']['eval'] = ([1], 260, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['train'] = ([2], 436, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['dev'] = ([2], 174, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['eval'] = ([2, 3, 4, 5, 6], 260, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['attack']['train'] = ([1], .5, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['attack']['dev'] = ([1], .2, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['attack']['eval'] = ([1], .3, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['real']['train'] = ([2], .5, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['real']['dev'] = ([2], .2, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPad')
 
-PAD_PROTOCOLS['PA.V.7']['attack']['train'] = ([1], 604, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['attack']['dev'] = ([1], 242, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['attack']['eval'] = ([1], 362, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['train'] = ([2], 604, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['dev'] = ([2], 242, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['eval'] = ([2, 3, 4, 5, 6], 362, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['attack']['train'] = ([1], .5, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['attack']['dev'] = ([1], .2, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['attack']['eval'] = ([1], .3, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['real']['train'] = ([2], .5, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['real']['dev'] = ([2], .2, 'iPhone')
+PAD_PROTOCOLS['PA.V.7']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 
 
 def _remove_root(file_list, root):
@@ -116,18 +117,21 @@ def _create(args):
                 for grp in PAD_PROTOCOLS[pa_type][real]:
                     _, number, _ = PAD_PROTOCOLS[pa_type][real][grp]
                     if real == 'real':
+                        if isinstance(number, float):
+                            number = int(len(file_lists[real][0]) * number)
                         files = file_lists[real][0][index:index + number]
                         if grp == 'eval':
                             files += file_lists[real][1]
-                        _add_clientid(files, None)
+                        files = _add_clientid(files, None)
                     else:
+                        if isinstance(number, float):
+                            number = int(len(file_lists[real]) * number)
                         files = file_lists[real][index:index + number]
-                        _add_clientid(files, pa_type)
+                        files = _add_clientid(files, pa_type)
                     path = 'lists/{p}/{g}/for_{r}.lst'.format(
                         p=protocol, g=grp, r=real)
                     path = pkg_resources.resource_filename(__name__, path)
                     create_directories_safe(dirname(path))
                     with open(path, 'wt') as f:
-                        f.write('\n'.join(files))
-                    if number is not None:
-                        index += number
+                        f.write('\n'.join(sorted(files)))
+                    index += number

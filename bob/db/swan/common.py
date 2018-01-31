@@ -39,7 +39,7 @@ class Client(object):
     def __init__(self, site, id_in_site, gender, **kwargs):
         super(Client, self).__init__(**kwargs)
         self.institute = site
-        self.id_in_site = int(id_in_site)
+        self.id_in_site = id_in_site
         self.gender = gender
 
     @property
