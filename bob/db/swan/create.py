@@ -1,4 +1,4 @@
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from os.path import join, dirname, abspath, sep
 from glob import glob
 import random
@@ -6,14 +6,6 @@ import pkg_resources
 from bob.extension import rc
 from bob.io.base import create_directories_safe
 from .common import swan_bio_file_metadata
-
-
-class OrderedDefaultDict(OrderedDict, defaultdict):
-    # from https://stackoverflow.com/a/35968897/1286165
-    def __init__(self, default_factory=None, *args, **kwargs):
-        # in python3 you can omit the args to super
-        super(OrderedDefaultDict, self).__init__(*args, **kwargs)
-        self.default_factory = default_factory
 
 
 def create_subparser(subparsers):
@@ -25,8 +17,12 @@ def create_subparser(subparsers):
     parser.set_defaults(func=_create)  # action
 
 
-PAD_PROTOCOLS = OrderedDefaultDict(
-    lambda: OrderedDefaultDict(OrderedDefaultDict))
+PAD_PROTOCOLS = OrderedDict()
+for pa in ['PA.F.1', 'PA.F.5', 'PA.F.6', 'PA.V.4', 'PA.V.7']:
+    PAD_PROTOCOLS[pa] = OrderedDict()
+    PAD_PROTOCOLS[pa]['attack'] = OrderedDict()
+    PAD_PROTOCOLS[pa]['real'] = OrderedDict()
+
 PAD_PROTOCOLS['PA.F.1']['attack']['train'] = ([1], .5, 'iPhone')
 PAD_PROTOCOLS['PA.F.1']['attack']['dev'] = ([1], .2, 'iPhone')
 PAD_PROTOCOLS['PA.F.1']['attack']['eval'] = ([1], .3, 'iPhone')
