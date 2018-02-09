@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from bob.db.swan import Database, SwanAudioPadFile
+from bob.db.swan.query_pad import Database, SwanAudioPadFile
 
 database = Database(
     pad_file_class=SwanAudioPadFile,

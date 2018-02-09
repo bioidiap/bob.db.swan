@@ -5,7 +5,7 @@ import random
 import pkg_resources
 from bob.extension import rc
 from bob.io.base import create_directories_safe
-from .common import swan_file_metadata
+from .common import swan_bio_file_metadata
 
 
 def create_subparser(subparsers):
@@ -47,9 +47,9 @@ PAD_PROTOCOLS['PA.F.6']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 PAD_PROTOCOLS['PA.V.4']['attack']['train'] = ([1], .5, 'iPad')
 PAD_PROTOCOLS['PA.V.4']['attack']['dev'] = ([1], .2, 'iPad')
 PAD_PROTOCOLS['PA.V.4']['attack']['eval'] = ([1], .3, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['train'] = ([2], .5, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['dev'] = ([2], .2, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPad')
+PAD_PROTOCOLS['PA.V.4']['real']['train'] = ([2], .5, 'iPhone')
+PAD_PROTOCOLS['PA.V.4']['real']['dev'] = ([2], .2, 'iPhone')
+PAD_PROTOCOLS['PA.V.4']['real']['eval'] = ([2, 3, 4, 5, 6], .3, 'iPhone')
 
 PAD_PROTOCOLS['PA.V.7']['attack']['train'] = ([1], .5, 'iPhone')
 PAD_PROTOCOLS['PA.V.7']['attack']['dev'] = ([1], .2, 'iPhone')
@@ -67,10 +67,10 @@ def _remove_root(file_list, root):
 def _add_clientid(file_list, attack_type):
     if attack_type is None:
         return ['{} {}'.format(
-            f, swan_file_metadata(f)[0].id) for f in file_list]
+            f, swan_bio_file_metadata(f)[0].id) for f in file_list]
     else:
         return ['{} {} {}'.format(
-            f, swan_file_metadata(f)[0].id, attack_type)
+            f, swan_bio_file_metadata(f)[0].id, attack_type)
             for f in file_list]
 
 
