@@ -5,7 +5,7 @@ import random
 import pkg_resources
 from bob.extension import rc
 from bob.io.base import create_directories_safe
-from .common import swan_bio_file_metadata
+from .common import swan_file_metadata
 
 
 def create_subparser(subparsers):
@@ -67,10 +67,10 @@ def _remove_root(file_list, root):
 def _add_clientid(file_list, attack_type):
     if attack_type is None:
         return ['{} {}'.format(
-            f, swan_bio_file_metadata(f)[0].id) for f in file_list]
+            f, swan_file_metadata(f)[0].id) for f in file_list]
     else:
         return ['{} {} {}'.format(
-            f, swan_bio_file_metadata(f)[0].id, attack_type)
+            f, swan_file_metadata(f)[0].id, attack_type)
             for f in file_list]
 
 

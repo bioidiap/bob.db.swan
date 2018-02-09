@@ -8,7 +8,7 @@ import bob.io.base
 import bob.io.video
 import numpy as np
 from bob.extension import rc
-from .common import swan_bio_file_metadata, read_audio
+from .common import swan_file_metadata, read_audio
 
 
 class SwanBioFile(object):
@@ -19,7 +19,7 @@ class SwanBioFile(object):
         (
             self.client, self.session, self.nrecording,
             self.device, self.modality
-        ) = swan_bio_file_metadata(self.path)
+        ) = swan_file_metadata(self.path)
 
 
 class SwanAudioBioFile(AudioBioFile, SwanBioFile):
@@ -59,6 +59,7 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
             return super(SwanVideoBioFile, self).load(
                 directory, extension, frame_selector)
 
+    @property
     def frames(self):
         """Yields the frames of the biofile one by one.
 
@@ -77,6 +78,7 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
         for frame in reader:
             yield self.swap(frame)
 
+    @property
     def number_of_frames(self):
         """Returns the number of frames in a video file.
 
@@ -140,7 +142,17 @@ class Database(bob.bio.base.database.FileListBioDatabase):
             f.original_directory = self.original_directory
         return files
 
+    def frames(self, padfile):
+        for frame in padfile.frames:
+            yield frame
+
+    def number_of_frames(self, padfile):
+        return padfile.number_of_frames
+
+    @property
+    def frame_shape(self):
+        return (3, 1280, 720)
+
 
 def load_frames(biofile, directory, extension):
-    for frame in biofile.frames():
-        yield frame
+    return biofile.frames

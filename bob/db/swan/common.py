@@ -47,7 +47,7 @@ class Client(object):
         return '{}_{}'.format(self.institute, self.id_in_site)
 
 
-def swan_bio_file_metadata(path):
+def swan_file_metadata(path):
     """Returns the metadata associated with a SWAN file recorded during the
     biometric recognition phase.
 
