@@ -63,11 +63,6 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
     def frames(self):
         """Yields the frames of the biofile one by one.
 
-        Parameters
-        ----------
-        biofile : :any:`SwanVideoBioFile`
-            The high-level bio file
-
         Yields
         ------
         :any:`numpy.array`
@@ -81,11 +76,6 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
     @property
     def number_of_frames(self):
         """Returns the number of frames in a video file.
-
-        Parameters
-        ----------
-        biofile : :any:`SwanVideoBioFile`
-            The high-level bio file
 
         Returns
         -------
@@ -102,7 +92,7 @@ class SwanVideoBioFile(VideoBioFile, SwanBioFile):
         Returns
         -------
         (int, int, int)
-            The (#Channels, Height, Width) which is (3, 1920, 1080).
+            The (#Channels, Height, Width) which is (3, 1280, 720).
         """
         return (3, 1280, 720)
 
@@ -143,8 +133,7 @@ class Database(bob.bio.base.database.FileListBioDatabase):
         return files
 
     def frames(self, padfile):
-        for frame in padfile.frames:
-            yield frame
+        return padfile.frames
 
     def number_of_frames(self, padfile):
         return padfile.number_of_frames
