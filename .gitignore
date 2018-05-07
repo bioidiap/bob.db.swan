@@ -13,3 +13,4 @@ sphinx
 dist
 conda
 *.sql3
+record.txt

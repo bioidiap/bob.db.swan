@@ -6,22 +6,20 @@
  SWAN Database Access API for Bob
 ==================================
 
-To use this database, you may need to download additional files:
+This package provides an API to the protocols of the SWAN database.
 
-.. code-block:: sh
-
-	$ bob_dbmanage.py swan download --missing
-	
-To configure the location of the database on your computer:
+To configure the location of the database and the location of face annotations
+on your computer:
 
 .. code-block:: sh
 
     $ bob config set bob.db.swan.directory /path/to/swan/database
+    $ bob config set bob.db.swan.annotation_dir /path/to/swan/annotations
 
 
 Package Documentation
 ---------------------
 
 .. automodule:: bob.db.swan
-.. automodule:: bob.db.swan.query
-.. automodule:: bob.db.swan.models
+.. automodule:: bob.db.swan.query_bio
+.. automodule:: bob.db.swan.query_pad
