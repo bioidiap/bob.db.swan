@@ -11,6 +11,6 @@ src
 develop-eggs
 sphinx
 dist
-conda
 *.sql3
+build/
 record.txt
