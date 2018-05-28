@@ -1,7 +1,14 @@
 import scipy.io.wavfile
+from bob.db.base import read_annotation_file
+from bob.io.base import load
+from bob.io.video import reader
+from bob.bio.video.utils import FrameSelector
+from bob.bio.video.database import VideoBioFile
+import numpy as np
 import subprocess
 import tempfile
 from os.path import split, splitext
+from . import SWAN_FRAME_SHAPE
 
 SITE_MAPPING = {
     '1': 'NTNU',
@@ -78,3 +85,130 @@ def swan_file_metadata(path):
     modality = MODALITY_MAPPING[modality]
     session = int(session)
     return client, session, nrecording, device, modality
+
+
+class SwanFile(object):
+    """A base class for SWAN bio files which can handle the metadata."""
+
+    def __init__(self, **kwargs):
+        super(SwanFile, self).__init__(**kwargs)
+        (
+            self.client, self.session, self.nrecording,
+            self.device, self.modality
+        ) = swan_file_metadata(self.path)
+
+
+class SwanVideoFile(VideoBioFile, SwanFile):
+    """A base class for SWAN video files"""
+
+    def swap(self, data):
+        # rotate the video or image since SWAN videos are not upright!
+        return np.swapaxes(data, -2, -1)
+
+    def load(self, directory=None, extension=None,
+             frame_selector=FrameSelector(selection_style='all')):
+        if extension is None:
+            video_path = self.make_path(directory or self.original_directory,
+                                        extension)
+            video = load(video_path)
+            video = self.swap(video)
+            return frame_selector(video)
+        else:
+            return super(SwanVideoFile, self).load(
+                directory, extension, frame_selector)
+
+    @property
+    def frames(self):
+        """Yields the frames of the padfile one by one.
+
+        Parameters
+        ----------
+        padfile : :any:`SwanVideoPadFile`
+            The high-level pad file
+
+        Yields
+        ------
+        :any:`numpy.array`
+            A frame of the video. The size is (3, 1280, 720).
+        """
+        vfilename = self.make_path(directory=self.original_directory)
+        video = reader(vfilename)
+        for frame in video:
+            yield self.swap(frame)
+
+    @property
+    def number_of_frames(self):
+        """Returns the number of frames in a video file.
+
+        Parameters
+        ----------
+        padfile : :any:`SwanVideoPadFile`
+            The high-level pad file
+
+        Returns
+        -------
+        int
+            The number of frames.
+        """
+        vfilename = self.make_path(directory=self.original_directory)
+        return reader(vfilename).number_of_frames
+
+    @property
+    def frame_shape(self):
+        """Returns the size of each frame in this database.
+
+        Returns
+        -------
+        (int, int, int)
+            The (#Channels, Height, Width) which is (3, 1920, 1080).
+        """
+        return SWAN_FRAME_SHAPE
+
+    @property
+    def annotations(self):
+        """Returns the annotations of the current file
+
+        Returns
+        -------
+        dict
+            The annotations as a dictionary, e.g.:
+            ``{'0': {'reye':(re_y,re_x), 'leye':(le_y,le_x)}, ...}``
+        """
+        return read_annotation_file(
+            self.make_path(self.annotation_directory,
+                           self.annotation_extension),
+            self.annotation_type)
+
+
+class SwanAudioFile(SwanVideoFile):
+    """A base class that extracts audio from SWAN video files"""
+
+    def load(self, directory=None, extension=None):
+        if extension is None:
+            video_path = self.make_path(directory, extension)
+            rate, audio = read_audio(video_path)
+            return rate, np.cast['float'](audio)
+        else:
+            return super(SwanAudioFile, self).load(directory, extension)
+
+
+class SwanVideoDatabase(object):
+    """SwanVideoDatabase"""
+
+    def frames(self, padfile):
+        return padfile.frames
+
+    def number_of_frames(self, padfile):
+        return padfile.number_of_frames
+
+    @property
+    def frame_shape(self):
+        return SWAN_FRAME_SHAPE
+
+    def update_files(self, files):
+        for f in files:
+            f.original_directory = self.original_directory
+            f.annotation_directory = self.annotation_directory
+            f.annotation_extension = self.annotation_extension
+            f.annotation_type = self.annotation_type
+        return files
