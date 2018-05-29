@@ -1,3 +1,6 @@
+SWAN_FRAME_SHAPE = (3, 1280, 720)
+"Shape of the video frames in the swan database."
+
 from .query_bio import Database, SwanAudioBioFile, SwanVideoBioFile
 
 
