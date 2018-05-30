@@ -8,7 +8,7 @@ from bob.extension import rc
 from .common import SwanVideoFile, SwanAudioFile, SwanVideoDatabase
 
 
-class SwanAudioBioFile(AudioBioFile, SwanAudioFile):
+class SwanAudioBioFile(SwanAudioFile, AudioBioFile):
     """SwanAudioBioFile are video files actually"""
 
 
