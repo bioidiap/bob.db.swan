@@ -16,11 +16,12 @@ on your computer:
     $ bob config set bob.db.swan.directory /path/to/swan/database
     $ bob config set bob.db.swan.annotation_dir /path/to/swan/annotations
 
+Documentation
+-------------
 
-Package Documentation
----------------------
+.. toctree::
+   :maxdepth: 2
 
-.. automodule:: bob.db.swan
-.. automodule:: bob.db.swan.common
-.. automodule:: bob.db.swan.query_bio
-.. automodule:: bob.db.swan.query_pad
+   protocols
+   py_api
+

@@ -130,7 +130,7 @@ class SwanVideoFile(VideoBioFile, SwanFile):
 
         Parameters
         ----------
-        padfile : :any:`SwanVideoPadFile`
+        padfile : :any:`SwanVideoFile`
             The high-level pad file
 
         Yields
@@ -149,7 +149,7 @@ class SwanVideoFile(VideoBioFile, SwanFile):
 
         Parameters
         ----------
-        padfile : :any:`SwanVideoPadFile`
+        padfile : :any:`SwanVideoFile`
             The high-level pad file
 
         Returns
