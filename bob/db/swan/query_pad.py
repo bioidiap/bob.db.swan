@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-from bob.pad.voice.database import PadVoiceFile
+from bob.pad.voice.database import PadVoiceFile as VoicePadFile
 from bob.pad.face.database import VideoPadFile
 from bob.pad.base.database import FileListPadDatabase
 from bob.extension import rc
 from .common import SwanVideoFile, SwanAudioFile, SwanVideoDatabase
 
 
-class SwanAudioPadFile(PadVoiceFile, SwanAudioFile):
+class SwanAudioPadFile(SwanAudioFile, VoicePadFile):
     """SwanAudioPadFile are video files actually"""
 
 
-class SwanVideoPadFile(VideoPadFile, SwanVideoFile):
+class SwanVideoPadFile(SwanVideoFile, VideoPadFile):
     """SwanVideoPadFile are video files actually"""
 
 

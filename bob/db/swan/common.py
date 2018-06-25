@@ -76,9 +76,11 @@ def swan_file_metadata(path):
     _, path = split(path)
     # path: 4_00001_m_01_01_t_2.mp4
     path, extension = splitext(path)
+    parts = path.split('_')
+    if len(parts) == 8:
+        parts = parts[1:]
     # path: 4_00001_m_01_01_t_2
-    site, identity, gender, session, nrecording, device, modality = \
-        path.split('_')
+    site, identity, gender, session, nrecording, device, modality = parts
     site = SITE_MAPPING[site]
     client = Client(site, identity, gender)
     device = DEVICE_MAPPING[device]
@@ -110,7 +112,12 @@ class SwanVideoFile(VideoBioFile, SwanFile):
         if extension is None:
             video_path = self.make_path(directory or self.original_directory,
                                         extension)
-            video = load(video_path)
+            for _ in range(100):
+                try:
+                    video = load(video_path)
+                    break
+                except RuntimeError:
+                    pass
             video = self.swap(video)
             return frame_selector(video)
         else:
