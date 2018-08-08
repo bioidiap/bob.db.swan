@@ -33,7 +33,7 @@ MODALITY_MAPPING = {
 
 def read_audio(video_path):
     with tempfile.NamedTemporaryFile(suffix='.wav') as f:
-        cmd = ['ffmpeg', '-i', video_path, '-y', '-vn', f.name]
+        cmd = ['ffmpeg', '-v', 'quiet', '-i', video_path, '-y', '-vn', f.name]
         subprocess.call(cmd)
         f.seek(0)
         rate, signal = scipy.io.wavfile.read(f.name)
