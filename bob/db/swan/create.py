@@ -1,9 +1,6 @@
-from collections import OrderedDict
-from os.path import join, dirname, abspath, sep
-from glob import glob
-import numpy as np
+from os.path import join
+import re
 import pkg_resources
-from bob.extension import rc
 from bob.io.base import create_directories_safe
 from .common import swan_file_metadata
 
@@ -11,161 +8,368 @@ from .common import swan_file_metadata
 def create_subparser(subparsers):
     parser = subparsers.add_parser(
         'create', help="Creates the PAD file lists of the dataset.")
-    parser.add_argument(
-        '-d', '--directory', default=rc['bob.db.swan.directory'],
-        help="The path to the root directory of raw database")
     parser.set_defaults(func=_create)  # action
 
 
-PAD_PROTOCOLS = OrderedDict()
-for pa in ['PA.F.1', 'PA.F.5', 'PA.F.6', 'PA.V.4', 'PA.V.7']:
-    PAD_PROTOCOLS[pa] = OrderedDict()
-    PAD_PROTOCOLS[pa]['attack'] = OrderedDict()
-    PAD_PROTOCOLS[pa]['real'] = OrderedDict()
-
-PAD_PROTOCOLS['PA.F.1']['extension'] = '.mp4'
-PAD_PROTOCOLS['PA.F.1']['attack']['train'] = ([1], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['attack']['dev'] = ([1], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['attack']['eval'] = ([1], .4, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['train'] = ([2], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['dev'] = ([2], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.1']['real']['eval'] = ([2, 3, 4, 5, 6], .4, 'iPhone')
-
-PAD_PROTOCOLS['PA.F.5']['extension'] = '.mp4'
-PAD_PROTOCOLS['PA.F.5']['attack']['train'] = ([1], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['attack']['dev'] = ([1], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['attack']['eval'] = ([1], .4, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['train'] = ([2], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['dev'] = ([2], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.5']['real']['eval'] = ([2, 3, 4, 5, 6], .4, 'iPhone')
-
-PAD_PROTOCOLS['PA.F.6']['extension'] = '.mp4'
-PAD_PROTOCOLS['PA.F.6']['attack']['train'] = ([1], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['attack']['dev'] = ([1], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['attack']['eval'] = ([1], .4, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['train'] = ([2], .5, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['dev'] = ([2], .2, 'iPhone')
-PAD_PROTOCOLS['PA.F.6']['real']['eval'] = ([2, 3, 4, 5, 6], .4, 'iPhone')
-
-PAD_PROTOCOLS['PA.V.4']['extension'] = '.wav'
-PAD_PROTOCOLS['PA.V.4']['attack']['train'] = ([1], .5, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['attack']['dev'] = ([1], .2, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['attack']['eval'] = ([1], .4, 'iPad')
-PAD_PROTOCOLS['PA.V.4']['real']['train'] = ([2], .5, 'iPhone')
-PAD_PROTOCOLS['PA.V.4']['real']['dev'] = ([2], .2, 'iPhone')
-PAD_PROTOCOLS['PA.V.4']['real']['eval'] = ([2, 3, 4, 5, 6], .4, 'iPhone')
-
-PAD_PROTOCOLS['PA.V.7']['extension'] = '.wav'
-PAD_PROTOCOLS['PA.V.7']['attack']['train'] = ([1], .5, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['attack']['dev'] = ([1], .2, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['attack']['eval'] = ([1], .4, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['train'] = ([2], .5, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['dev'] = ([2], .2, 'iPhone')
-PAD_PROTOCOLS['PA.V.7']['real']['eval'] = ([2, 3, 4, 5, 6], .4, 'iPhone')
-
-
-def _remove_root(file_list, root):
-    root = abspath(root) + sep
-
-    def _filter_files(path):
-        # NTNU_00011: the person changes at session 5 and 6 and audio is mute
-        if 'NTNU' in path and '00011' in path:
-            return False
-        return True
-
-    return filter(_filter_files, (f.replace(root, '') for f in file_list))
+IDS = (('IDIAP_00055', 'NTNU_00053', 'IDIAP_00049', 'MPH-IND_00043',
+        'IDIAP_00031', 'NTNU_00045', 'IDIAP_00028', 'MPH-FRA_00001',
+        'NTNU_00013', 'NTNU_00026', 'NTNU_00032', 'MPH-IND_00001',
+        'NTNU_00024', 'IDIAP_00054', 'NTNU_00042'),
+       ('IDIAP_00059', 'NTNU_00047', 'MPH-IND_00017', 'NTNU_00031',
+        'NTNU_00035', 'NTNU_00030', 'MPH-IND_00002', 'NTNU_00004',
+        'MPH-IND_00005', 'IDIAP_00011', 'MPH-IND_00007', 'IDIAP_00002',
+        'MPH-IND_00031', 'MPH-FRA_00002', 'IDIAP_00022'),
+       ('NTNU_00041', 'MPH-IND_00024', 'IDIAP_00014', 'IDIAP_00020',
+        'NTNU_00029', 'MPH-IND_00028', 'MPH-IND_00041', 'IDIAP_00005',
+        'IDIAP_00029', 'IDIAP_00039', 'IDIAP_00038', 'NTNU_00040',
+        'IDIAP_00025', 'NTNU_00039', 'IDIAP_00017'),
+       ('NTNU_00044', 'MPH-FRA_00007', 'MPH-IND_00012', 'NTNU_00002',
+        'IDIAP_00050', 'IDIAP_00034', 'IDIAP_00021', 'NTNU_00046',
+        'MPH-IND_00020', 'NTNU_00007', 'NTNU_00037', 'NTNU_00010',
+        'MPH-IND_00036', 'MPH-IND_00034', 'IDIAP_00043'),
+       ('IDIAP_00048', 'MPH-IND_00032', 'IDIAP_00001', 'MPH-IND_00039',
+        'NTNU_00003', 'MPH-IND_00046', 'MPH-IND_00009', 'MPH-IND_00042',
+        'NTNU_00008', 'NTNU_00036', 'NTNU_00012', 'NTNU_00038', 'IDIAP_00040',
+        'IDIAP_00018', 'NTNU_00034'),
+       ('MPH-IND_00045', 'IDIAP_00042', 'NTNU_00001', 'IDIAP_00010',
+        'NTNU_00019', 'MPH-IND_00044', 'MPH-IND_00051', 'MPH-IND_00018',
+        'NTNU_00018', 'IDIAP_00035', 'MPH-FRA_00003', 'MPH-IND_00025',
+        'MPH-FRA_00005', 'MPH-IND_00050', 'IDIAP_00026'),
+       ('MPH-IND_00055', 'MPH-IND_00011', 'IDIAP_00052', 'MPH-IND_00023',
+        'IDIAP_00030', 'MPH-IND_00033', 'IDIAP_00046', 'MPH-IND_00030',
+        'MPH-IND_00016', 'IDIAP_00013', 'NTNU_00014', 'MPH-IND_00008',
+        'NTNU_00022', 'NTNU_00017', 'IDIAP_00041'),
+       ('IDIAP_00027', 'NTNU_00052', 'IDIAP_00033', 'NTNU_00016', 'NTNU_00023',
+        'IDIAP_00016', 'MPH-IND_00015', 'MPH-IND_00047', 'IDIAP_00004',
+        'MPH-FRA_00006', 'IDIAP_00015', 'IDIAP_00032', 'MPH-IND_00010',
+        'MPH-IND_00013', 'NTNU_00054'),
+       ('NTNU_00005', 'NTNU_00027', 'IDIAP_00051', 'MPH-IND_00048',
+        'NTNU_00028', 'MPH-IND_00038', 'MPH-IND_00006', 'NTNU_00033',
+        'NTNU_00025', 'NTNU_00020', 'NTNU_00051', 'MPH-IND_00004',
+        'IDIAP_00036', 'NTNU_00006', 'NTNU_00021'),
+       ('IDIAP_00006', 'NTNU_00015', 'IDIAP_00019',
+        'IDIAP_00058', 'MPH-IND_00026', 'MPH-IND_00049',
+        'NTNU_00043', 'MPH-IND_00037', 'IDIAP_00047',
+        'IDIAP_00012', 'MPH-IND_00040', 'IDIAP_00060',
+        'MPH-IND_00014', 'IDIAP_00003', 'IDIAP_00024'))
+BIO_FOLDS = (('1', (0, 1, 2), (3, 4, 5, 6, 7, 8, 9)),
+             ('2', (3, 4, 5), (0, 1, 2, 6, 7, 8, 9)),
+             ('3', (6, 7, 8), (0, 1, 2, 3, 4, 5, 9)),
+             ('4', (0, 3, 6), (1, 2, 4, 5, 7, 8, 9)),
+             ('5', (1, 4, 9), (0, 2, 3, 5, 6, 7, 8)),)
+PAD_FOLDS = (('1', (2, 0, 5, 8, 4), (9, 7), (1, 6, 3)),
+             ('2', (7, 8, 2, 9, 1), (6, 0), (4, 3, 5)),
+             ('3', (8, 3, 6, 0, 1), (5, 2), (9, 7, 4)),
+             ('4', (9, 4, 7, 0, 2), (6, 5), (1, 8, 3)),
+             ('5', (8, 2, 9, 0, 1), (5, 4), (6, 7, 3)))
 
 
-def _add_clientid(file_list, attack_type):
-    if attack_type is None:
-        return ['{} {}'.format(
-            f, swan_file_metadata(f)[0].id) for f in file_list]
+def get_ids(ids):
+    return tuple(x for i in ids for x in IDS[i])
+
+
+def empty_norm(folder):
+    path = join(folder, 'norm')
+    create_directories_safe(path)
+    path = join(path, 'train_world.lst')
+    with open(path, 'w'):
+        pass
+
+
+def enrollment_probes(folder, files, group, pattern, ids, cls='enroll'):
+    path = join(folder, group)
+    create_directories_safe(path)
+    if cls == 'probe':
+        path = join(path, 'for_probes.lst')
+    elif cls == 'attack':
+        path = join(path, 'for_scores.lst')
     else:
-        return ['{} {} {}'.format(
-            f, swan_file_metadata(f)[0].id, attack_type)
-            for f in file_list]
+        path = join(path, 'for_models.lst')
+    regex = re.compile(pattern)
+    files = filter(regex.search, files)
+    with open(path, 'w') as f:
+        for line in files:
+            path = line.strip()
+            client_id = swan_file_metadata(path)[0].id
+            if client_id not in ids:
+                continue
+            if cls == 'probe':
+                f.write('{0} {1}\n'.format(path, client_id))
+            elif cls == 'attack':
+                attack_type = path.split('/')[2]
+                f.write('{0} {1} {1} attack/{2}\n'.format(
+                    path, client_id, attack_type))
+            else:
+                f.write('{0} {1} {1}\n'.format(path, client_id))
 
 
-def _create_aggregate_pad_protocol(protocol_name, protocols):
-    path_mask = 'lists/{p}/{g}/for_{r}.lst'
-    path_mask = pkg_resources.resource_filename(__name__, path_mask)
-    for g in ('train', 'dev', 'eval'):
-        for real in ('real', 'attack'):
-            file_list = []
-            for i, p in enumerate(protocols):
-                if i != 0 and real == 'real':
+def licit_protocols(out_folder, files, patterns, attack=False):
+    for fold, dev_ids, eval_ids in BIO_FOLDS:
+        for modality in ('eye', 'face', 'voice'):
+            folder = '{}_{}_f{}'.format(out_folder, modality, fold)
+            # create empty norm folder
+            empty_norm(folder)
+
+            # create enrollments
+            pattern = patterns[(modality, 'enroll')]
+            enrollment_probes(folder, files, 'dev',
+                              pattern, get_ids(dev_ids))
+            enrollment_probes(folder, files, 'eval',
+                              pattern, get_ids(eval_ids))
+
+            # create probes
+            pattern = patterns[(modality, 'probe')]
+            enrollment_probes(folder, files, 'dev',
+                              pattern, get_ids(dev_ids),
+                              cls='attack' if attack else 'probe')
+            enrollment_probes(folder, files, 'eval',
+                              pattern, get_ids(eval_ids),
+                              cls='attack' if attack else 'probe')
+
+
+def pad_list(folder, files, bf, pa, ids):
+    create_directories_safe(folder)
+    bf = re.compile(bf)
+    pa = re.compile(pa)
+    bf_files = filter(bf.search, files)
+    pa_files = filter(pa.search, files)
+    for name, lines in [
+        ('for_real.lst', bf_files),
+        ('for_attack.lst', pa_files),
+    ]:
+        with open(join(folder, name), 'w') as f:
+            for line in lines:
+                path = line.strip()
+                client_id = swan_file_metadata(path)[0].id
+                if client_id not in ids:
                     continue
-                file_list += open(
-                    path_mask.format(p=p, g=g, r=real)).readlines()
-                if not file_list[-1].endswith('\n'):
-                    file_list[-1] += '\n'
-            path = path_mask.format(p=protocol_name, g=g, r=real)
-            create_directories_safe(dirname(path))
-            with open(path, 'wt') as f:
-                f.writelines(file_list)
+                if name == 'for_real.lst':
+                    f.write('{0} {1}\n'.format(path, client_id))
+                else:
+                    attack_type = path.split('/')[2]
+                    f.write('{0} {1} {2}\n'.format(
+                        path, client_id, attack_type))
+
+
+def pad_protocols(out_folder, files, patterns):
+    for fold, train_ids, dev_ids, eval_ids in PAD_FOLDS:
+        folder = '{}_f{}'.format(out_folder, fold)
+
+        for group, ids in (
+            ('train', train_ids),
+            ('dev', dev_ids),
+            ('eval', eval_ids),
+        ):
+            bf = patterns[(group, 'bf')]
+            pa = patterns[(group, 'pa')]
+            pad_list(join(folder, group), files,
+                     bf, pa, get_ids(ids))
+
+
+def bio_protocol_1(out_folder, files):
+    # This give the variation for indoor versus outdoor.
+    # enroll with session 2
+    # probe with session 3
+    # Data Partition: 30% development and 70% evaluation.
+    # 5 Folds
+    # Enrollment: 2 images corresponding to 2 video.
+    # Probe: All Video and Images.
+    # For EYE biometrics: We can enroll Assisted and probe self capture.
+    patterns = {
+        ('eye', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_3\.mp4',
+        ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
+        ('voice', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
+        ('eye', 'probe'): r'.*session_03/iPhone/.*/.*_03_((0[6-9]|10)_p_3\.png|0[3-4]_p_3\.mp4)',
+        ('face', 'probe'): r'.*session_03/iPhone/.*/.*_03_0[1-2]_p_1.*',
+        ('voice', 'probe'): r'.*session_03/iPhone/.*/.*_03_0[3-4]_p_2.*',
+    }
+    licit_protocols(out_folder, files, patterns)
+
+
+def bio_protocol_2(out_folder, files):
+    # This will give variation for Indoor controlled.
+    # enroll with session 1
+    # probe with session 2
+    # Data Partition: 30% development and 70% evaluation.
+    # 5 Folds
+    # Enrollment: 2 images corresponding to 2 video.
+    # Probe: All Video and Images.
+    # For EYE biometrics: We can enroll Assisted and probe self capture.
+    patterns = {
+        ('eye', 'enroll'): r'.*session_01/iPhone/.*/.*_01_0[1-2]_p_3\.mp4',
+        ('face', 'enroll'): r'.*session_01/iPhone/.*/.*_01_0[1-2]_p_1\.mp4',
+        ('voice', 'enroll'): r'.*session_01/iPhone/.*/.*_01_0[1-2]_p_2\.mp4',
+        ('eye', 'probe'): r'.*session_02/iPhone/.*/.*_02_((0[6-9]|10)_p_3\.png|0[3-4]_p_3\.mp4)',
+        ('face', 'probe'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1.*',
+        ('voice', 'probe'): r'.*session_02/iPhone/.*/.*_02_0[3-4]_p_2.*',
+    }
+    licit_protocols(out_folder, files, patterns)
+
+
+def bio_protocol_3(out_folder, files):
+    # This will give variation for indoor controlled versus indoor/outdoor
+    # uncontrolled
+    # enroll with session 2
+    # probe with session 3,4,5,6
+    # Data Partition: 30% development and 70% evaluation.
+    # 5 Folds
+    # Enrollment: 2 images corresponding to 2 video.
+    # Probe: All Video and Images.
+    # For EYE biometrics: We can enroll Assisted and probe self capture.
+    patterns = {
+        ('eye', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_3\.mp4',
+        ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
+        ('voice', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
+        ('eye', 'probe'): r'.*session_0[3-6]/iPhone/.*/.*_0[3-6]_((0[6-9]|10)_p_3\.png|0[3-4]_p_3\.mp4)',
+        ('face', 'probe'): r'.*session_0[3-6]/iPhone/.*/.*_0[3-6]_0[1-2]_p_1.*',
+        ('voice', 'probe'): r'.*session_0[3-6]/iPhone/.*/.*_0[3-6]_0[3-4]_p_2.*',
+    }
+    licit_protocols(out_folder, files, patterns)
+
+
+def spoof_protocol_3(out_folder, files):
+    # This will give variation for indoor controlled versus indoor/outdoor
+    # uncontrolled
+    # enroll with session 2
+    # probe with session 3,4,5,6
+    # Data Partition: 30% development and 70% evaluation.
+    # 5 Folds
+    # Enrollment: 2 images corresponding to 2 video.
+    # Probe: All Video and Images.
+    # For EYE biometrics: We can enroll Assisted and probe self capture.
+    patterns = {
+        ('eye', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_3\.mp4',
+        ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
+        ('voice', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
+        ('eye', 'probe'): r'pa-database/Eye/.*',
+        ('face', 'probe'): r'pa-database/Face/.*',
+        ('voice', 'probe'): r'pa-database/Voice/.*',
+    }
+    licit_protocols(out_folder, files, patterns, attack=True)
+
+
+def all_pad_protocols(out_folder, files):
+    # protocol 1
+    # eye
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-4]_p_3\.mp4',
+        ('train', 'pa'): r'pa-database/Eye/PA\.EI\.1/.*',
+        ('dev', 'pa'): r'pa-database/Eye/PA\.EI\.1/.*',
+        ('eval', 'pa'): r'pa-database/Eye/PA\.EI\.1/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_pae1', files, patterns)
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-4]_p_3\.mp4',
+        ('train', 'pa'): r'pa-database/Eye/PA\.EI\.4/.*',
+        ('dev', 'pa'): r'pa-database/Eye/PA\.EI\.4/.*',
+        ('eval', 'pa'): r'pa-database/Eye/PA\.EI\.4/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_pae4', files, patterns)
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-4]_p_3\.mp4',
+        ('train', 'pa'): r'pa-database/Eye/PA\.EI\.5/.*',
+        ('dev', 'pa'): r'pa-database/Eye/PA\.EI\.5/.*',
+        ('eval', 'pa'): r'pa-database/Eye/PA\.EI\.5/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_pae5', files, patterns)
+    # face
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-2]_p_1\.mp4',
+        ('train', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
+        ('dev', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
+        ('eval', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_paf1', files, patterns)
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
+        ('train', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
+        ('dev', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
+        ('eval', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_paf5', files, patterns)
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
+        ('train', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
+        ('dev', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
+        ('eval', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_paf6', files, patterns)
+    # voice
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
+        ('train', 'pa'): r'pa-database/Voice/PA\.V\.4/.*',
+        ('dev', 'pa'): r'pa-database/Voice/PA\.V\.4/.*',
+        ('eval', 'pa'): r'pa-database/Voice/PA\.V\.4/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_pav4', files, patterns)
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
+        ('train', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
+        ('dev', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
+        ('eval', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
+    }
+    pad_protocols(out_folder + 'pad_p1_pav7', files, patterns)
+    # protocol 2
+    # eye
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-4]_p_3\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-4]_p_3\.mp4',
+        ('train', 'pa'): r'pa-database/Eye/.*',
+        ('dev', 'pa'): r'pa-database/Eye/.*',
+        ('eval', 'pa'): r'pa-database/Eye/.*',
+    }
+    pad_protocols(out_folder + 'pad_p2_eye', files, patterns)
+    # face
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_[1-2]\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_[1-2]\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_[1-2]\.mp4',
+        ('train', 'pa'): r'pa-database/Face/.*',
+        ('dev', 'pa'): r'pa-database/Face/.*',
+        ('eval', 'pa'): r'pa-database/Face/.*',
+    }
+    pad_protocols(out_folder + 'pad_p2_face', files, patterns)
+    # voice
+    patterns = {
+        ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
+        ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
+        ('train', 'pa'): r'pa-database/Voice/.*',
+        ('dev', 'pa'): r'pa-database/Voice/.*',
+        ('eval', 'pa'): r'pa-database/Voice/.*',
+    }
+    pad_protocols(out_folder + 'pad_p2_voice', files, patterns)
 
 
 def _create(args):
-    root = args.directory
-    K = 10
-    np.random.seed(K)
     # list all files
-    for k in range(K):
-        for pa_type in PAD_PROTOCOLS:
-            modality = pa_type[3]
-            modality_name = 'Face' if modality == 'F' else 'Voice'
-            modality_number = '1' if modality == 'F' else '2'
-            protocol = '{}-{}'.format(pa_type, k)
-            extension = PAD_PROTOCOLS[pa_type]['extension']
-            for real in PAD_PROTOCOLS[pa_type]:
-                if real == 'extension':
-                    continue
-                all_sessions, _, device = PAD_PROTOCOLS[pa_type][real]['eval']
-                real_files, rest_real_files, attack_files = [], [], []
-                if real == 'attack':
-                    attack_files = glob(
-                        join(root, 'pa-database', modality_name, pa_type,
-                             '*' + extension))
-                    attack_files = sorted(_remove_root(attack_files, root))
-                    np.random.shuffle(attack_files)
-                else:
-                    # IDIAP/session_01/iPad/00001/4_00001_m_01_01_t_1.mp4
-                    for sess in all_sessions:
-                        files = real_files if sess == 2 else rest_real_files
-                        for site in ['IDIAP', 'NTNU', 'MPH-FRA', 'MPH-IND']:
-                            files += glob(
-                                join(root, site, 'session_0{}'.format(sess),
-                                     device, '*',
-                                     '*_{}.mp4'.format(modality_number)))
-                    real_files = sorted(_remove_root(real_files, root))
-                    rest_real_files = sorted(_remove_root(
-                        rest_real_files, root))
-                    np.random.shuffle(real_files)
-                file_lists = {'real': [real_files, rest_real_files],
-                              'attack': attack_files}
-                index = 0
-                for grp in PAD_PROTOCOLS[pa_type][real]:
-                    _, number, _ = PAD_PROTOCOLS[pa_type][real][grp]
-                    if real == 'real':
-                        if isinstance(number, float):
-                            number = round(len(file_lists[real][0]) * number)
-                        files = file_lists[real][0][index:index + number]
-                        if grp == 'eval':
-                            files += file_lists[real][1]
-                        files = _add_clientid(files, None)
-                    else:
-                        if isinstance(number, float):
-                            number = round(len(file_lists[real]) * number)
-                        files = file_lists[real][index:index + number]
-                        files = _add_clientid(files, pa_type)
-                    path = 'lists/{p}/{g}/for_{r}.lst'.format(
-                        p=protocol, g=grp, r=real)
-                    path = pkg_resources.resource_filename(__name__, path)
-                    create_directories_safe(dirname(path))
-                    with open(path, 'wt') as f:
-                        f.write('\n'.join(sorted(files)))
-                    index += number
-    _create_aggregate_pad_protocol(
-        'PA_F', ['PA.F.1-0', 'PA.F.5-0', 'PA.F.6-0'])
-    _create_aggregate_pad_protocol(
-        'PA_V', ['PA.V.4-0', 'PA.V.7-0'])
+    files = open(pkg_resources.resource_filename(
+        __name__, 'lists/swan_noextra.lst')).readlines()
+    # create protocols
+    path = pkg_resources.resource_filename(__name__, 'lists/licit_p1')
+    bio_protocol_1(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/licit_p2')
+    bio_protocol_2(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/licit_p3')
+    bio_protocol_3(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/spoof_p3')
+    spoof_protocol_3(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/')
+    all_pad_protocols(path, files)
