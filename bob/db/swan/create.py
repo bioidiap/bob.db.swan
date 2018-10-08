@@ -320,9 +320,9 @@ def all_pad_protocols(out_folder, files):
         ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
-        ('train', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
-        ('dev', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
-        ('eval', 'pa'): r'pa-database/Voice/PA\.F\.7/.*',
+        ('train', 'pa'): r'pa-database/Voice/PA\.V\.7/.*',
+        ('dev', 'pa'): r'pa-database/Voice/PA\.V\.7/.*',
+        ('eval', 'pa'): r'pa-database/Voice/PA\.V\.7/.*',
     }
     pad_protocols(out_folder + 'pad_p1_pav7', files, patterns)
     # protocol 2
