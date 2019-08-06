@@ -103,9 +103,11 @@ def enrollment_probes(folder, files, group, pattern, ids, cls='enroll'):
                 f.write('{0} {1} {1}\n'.format(path, client_id))
 
 
-def licit_protocols(out_folder, files, patterns, attack=False):
+def licit_protocols(
+    out_folder, files, patterns, attack=False, modalities=('eye', 'face', 'voice')
+):
     for fold, dev_ids, eval_ids in BIO_FOLDS:
-        for modality in ('eye', 'face', 'voice'):
+        for modality in modalities:
             folder = '{}_{}_f{}'.format(out_folder, modality, fold)
             # create empty norm folder
             empty_norm(folder)
@@ -207,8 +209,7 @@ def bio_protocol_2(out_folder, files):
 
 
 def bio_protocol_3(out_folder, files):
-    # This will give variation for indoor controlled versus indoor/outdoor
-    # uncontrolled
+    # This will give variation for indoor controlled versus indoor/outdoor uncontrolled
     # enroll with session 2
     # probe with session 3,4,5,6
     # Data Partition: 30% development and 70% evaluation.
@@ -227,6 +228,15 @@ def bio_protocol_3(out_folder, files):
     licit_protocols(out_folder, files, patterns)
 
 
+def bio_protocol_4(out_folder, files):
+    # This is just like protocol 3 but faces are talking faces
+    patterns = {
+        ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
+        ('face', 'probe'): r'.*session_0[3-6]/iPhone/.*/.*_0[3-6]_0[3-4]_p_2.*',
+    }
+    licit_protocols(out_folder, files, patterns, modalities=['face'])
+
+
 def spoof_protocol_3(out_folder, files):
     # This will give variation for indoor controlled versus indoor/outdoor
     # uncontrolled
@@ -242,8 +252,17 @@ def spoof_protocol_3(out_folder, files):
         ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
         ('voice', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
         ('eye', 'probe'): r'pa-database/Eye/.*',
-        ('face', 'probe'): r'pa-database/Face/.*',
+        ('face', 'probe'): r'pa-database/StillFace/.*',
         ('voice', 'probe'): r'pa-database/Voice/.*',
+    }
+    licit_protocols(out_folder, files, patterns, attack=True)
+
+
+def spoof_protocol_4(out_folder, files):
+    # spoof protocol for talking faces that matches bio_protocol_4
+    patterns = {
+        ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
+        ('face', 'probe'): r'pa-database/TalkingFace/.*',
     }
     licit_protocols(out_folder, files, patterns, attack=True)
 
@@ -283,27 +302,27 @@ def all_pad_protocols(out_folder, files):
         ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
         ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_1\.mp4',
         ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-2]_p_1\.mp4',
-        ('train', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
-        ('dev', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
-        ('eval', 'pa'): r'pa-database/Face/PA\.F\.1/.*',
+        ('train', 'pa'): r'pa-database/TalkingFace/PA\.F\.1/.*',
+        ('dev', 'pa'): r'pa-database/TalkingFace/PA\.F\.1/.*',
+        ('eval', 'pa'): r'pa-database/TalkingFace/PA\.F\.1/.*',
     }
     pad_protocols(out_folder + 'pad_p1_paf1', files, patterns)
     patterns = {
         ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
-        ('train', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
-        ('dev', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
-        ('eval', 'pa'): r'pa-database/Face/PA\.F\.5/.*',
+        ('train', 'pa'): r'pa-database/TalkingFace/PA\.F\.5/.*',
+        ('dev', 'pa'): r'pa-database/TalkingFace/PA\.F\.5/.*',
+        ('eval', 'pa'): r'pa-database/TalkingFace/PA\.F\.5/.*',
     }
     pad_protocols(out_folder + 'pad_p1_paf5', files, patterns)
     patterns = {
         ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_2\.mp4',
         ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_2\.mp4',
-        ('train', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
-        ('dev', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
-        ('eval', 'pa'): r'pa-database/Face/PA\.F\.6/.*',
+        ('train', 'pa'): r'pa-database/TalkingFace/PA\.F\.6/.*',
+        ('dev', 'pa'): r'pa-database/TalkingFace/PA\.F\.6/.*',
+        ('eval', 'pa'): r'pa-database/TalkingFace/PA\.F\.6/.*',
     }
     pad_protocols(out_folder + 'pad_p1_paf6', files, patterns)
     # voice
@@ -373,3 +392,5 @@ def _create(args):
     spoof_protocol_3(path, files)
     path = pkg_resources.resource_filename(__name__, 'lists/')
     all_pad_protocols(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/licit_p4')
+    bio_protocol_4(path, files)
