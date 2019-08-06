@@ -264,7 +264,7 @@ def spoof_protocol_4(out_folder, files):
         ('face', 'enroll'): r'.*session_02/iPhone/.*/.*_02_0[1-2]_p_2\.mp4',
         ('face', 'probe'): r'pa-database/TalkingFace/.*',
     }
-    licit_protocols(out_folder, files, patterns, attack=True)
+    licit_protocols(out_folder, files, patterns, attack=True, modalities=['face'])
 
 
 def all_pad_protocols(out_folder, files):
@@ -390,6 +390,8 @@ def _create(args):
     bio_protocol_3(path, files)
     path = pkg_resources.resource_filename(__name__, 'lists/spoof_p3')
     spoof_protocol_3(path, files)
+    path = pkg_resources.resource_filename(__name__, 'lists/spoof_p4')
+    spoof_protocol_4(path, files)
     path = pkg_resources.resource_filename(__name__, 'lists/')
     all_pad_protocols(path, files)
     path = pkg_resources.resource_filename(__name__, 'lists/licit_p4')
