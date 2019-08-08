@@ -360,9 +360,9 @@ def all_pad_protocols(out_folder, files):
         ('train', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_[1-2]\.mp4',
         ('dev', 'bf'): r'.*session_02/iPhone/.*/.*_02_0[1-8]_p_[1-2]\.mp4',
         ('eval', 'bf'): r'.*session_0[2-6]/iPhone/.*/.*_0[2-6]_0[1-8]_p_[1-2]\.mp4',
-        ('train', 'pa'): r'pa-database/Face/.*',
-        ('dev', 'pa'): r'pa-database/Face/.*',
-        ('eval', 'pa'): r'pa-database/Face/.*',
+        ('train', 'pa'): r'pa-database/TalkingFace/.*',
+        ('dev', 'pa'): r'pa-database/TalkingFace/.*',
+        ('eval', 'pa'): r'pa-database/TalkingFace/.*',
     }
     pad_protocols(out_folder + 'pad_p2_face', files, patterns)
     # voice
