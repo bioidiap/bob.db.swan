@@ -1,4 +1,5 @@
 import scipy.io.wavfile
+import scipy.signal
 from bob.db.base import read_annotation_file
 from bob.io.base import load
 from bob.io.video import reader
@@ -9,34 +10,27 @@ import subprocess
 import tempfile
 from os.path import split, splitext
 from . import SWAN_FRAME_SHAPE
+import logging
 
-SITE_MAPPING = {
-    '1': 'NTNU',
-    '2': 'UIO',
-    '3': 'MPH-FRA',
-    '4': 'IDIAP',
-    '6': 'MPH-IND',
-}
+logger = logging.getLogger(__name__)
 
-DEVICE_MAPPING = {
-    'p': 'iPhone',
-    't': 'iPad',
-}
+SITE_MAPPING = {"1": "NTNU", "2": "UIO", "3": "MPH-FRA", "4": "IDIAP", "6": "MPH-IND"}
 
-MODALITY_MAPPING = {
-    '1': 'face',
-    '2': 'voice',
-    '3': 'eye',
-    '4': 'finger',
-}
+DEVICE_MAPPING = {"p": "iPhone", "t": "iPad"}
+
+MODALITY_MAPPING = {"1": "face", "2": "voice", "3": "eye", "4": "finger"}
 
 
-def read_audio(video_path):
-    with tempfile.NamedTemporaryFile(suffix='.wav') as f:
-        cmd = ['ffmpeg', '-i', video_path, '-y', '-vn', f.name]
+def read_audio(video_path, new_rate=None):
+    with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+        cmd = ["ffmpeg", "-v", "quiet", "-i", video_path, "-y", "-vn", f.name]
         subprocess.call(cmd)
         f.seek(0)
         rate, signal = scipy.io.wavfile.read(f.name)
+    if new_rate is not None and rate != new_rate:
+        logger.debug("Resampling audio from %d to %d", rate, new_rate)
+        samps = round(len(signal) * new_rate / rate)  # Number of samples to resample
+        signal, rate = scipy.signal.resample(signal, samps), new_rate
     return rate, signal
 
 
@@ -51,7 +45,7 @@ class Client(object):
 
     @property
     def id(self):
-        return '{}_{}'.format(self.institute, self.id_in_site)
+        return "{}_{}".format(self.institute, self.id_in_site)
 
 
 def swan_file_metadata(path):
@@ -76,7 +70,7 @@ def swan_file_metadata(path):
     _, path = split(path)
     # path: 4_00001_m_01_01_t_2.mp4
     path, extension = splitext(path)
-    parts = path.split('_')
+    parts = path.split("_")
     if len(parts) == 8:
         parts = parts[1:]
     # path: 4_00001_m_01_01_t_2
@@ -95,8 +89,11 @@ class SwanFile(object):
     def __init__(self, **kwargs):
         super(SwanFile, self).__init__(**kwargs)
         (
-            self.client, self.session, self.nrecording,
-            self.device, self.modality
+            self.client,
+            self.session,
+            self.nrecording,
+            self.device,
+            self.modality,
         ) = swan_file_metadata(self.path)
 
 
@@ -107,11 +104,14 @@ class SwanVideoFile(VideoBioFile, SwanFile):
         # rotate the video or image since SWAN videos are not upright!
         return np.swapaxes(data, -2, -1)
 
-    def load(self, directory=None, extension=None,
-             frame_selector=FrameSelector(selection_style='all')):
+    def load(
+        self,
+        directory=None,
+        extension=None,
+        frame_selector=FrameSelector(selection_style="all"),
+    ):
         if extension is None:
-            video_path = self.make_path(directory or self.original_directory,
-                                        extension)
+            video_path = self.make_path(directory or self.original_directory, extension)
             for _ in range(100):
                 try:
                     video = load(video_path)
@@ -121,8 +121,7 @@ class SwanVideoFile(VideoBioFile, SwanFile):
             video = self.swap(video)
             return frame_selector(video)
         else:
-            return super(SwanVideoFile, self).load(
-                directory, extension, frame_selector)
+            return super(SwanVideoFile, self).load(directory, extension, frame_selector)
 
     @property
     def frames(self):
@@ -182,25 +181,33 @@ class SwanVideoFile(VideoBioFile, SwanFile):
             ``{'0': {'reye':(re_y,re_x), 'leye':(le_y,le_x)}, ...}``
         """
         return read_annotation_file(
-            self.make_path(self.annotation_directory,
-                           self.annotation_extension),
-            self.annotation_type)
+            self.make_path(self.annotation_directory, self.annotation_extension),
+            self.annotation_type,
+        )
 
 
 class SwanAudioFile(SwanVideoFile):
     """A base class that extracts audio from SWAN video files"""
 
+    def __init__(self, new_rate=None, **kwargs):
+        super().__init__(**kwargs)
+        self.new_rate = new_rate
+
     def load(self, directory=None, extension=None):
         if extension is None:
             video_path = self.make_path(directory, extension)
-            rate, audio = read_audio(video_path)
-            return rate, np.cast['float'](audio)
+            rate, audio = read_audio(video_path, new_rate=self.new_rate)
+            return rate, np.cast["float"](audio)
         else:
             return super(SwanAudioFile, self).load(directory, extension)
 
 
 class SwanVideoDatabase(object):
     """SwanVideoDatabase"""
+
+    def __init__(self, new_rate=None, **kwargs):
+        super().__init__(**kwargs)
+        self.new_rate = new_rate
 
     def frames(self, padfile):
         return padfile.frames
@@ -218,4 +225,5 @@ class SwanVideoDatabase(object):
             f.annotation_directory = self.annotation_directory
             f.annotation_extension = self.annotation_extension
             f.annotation_type = self.annotation_type
+            f.new_rate = self.new_rate
         return files

@@ -38,7 +38,7 @@ class Database(bob.bio.base.database.FileListBioDatabase, SwanVideoDatabase):
             annotation_extension=annotation_extension,
             annotation_type=annotation_type,
             original_directory=original_directory,
-            training_depends_on_protocol=True, models_depend_on_protocol=True,
+            training_depends_on_protocol=False, models_depend_on_protocol=True,
             **kwargs
         )
 
