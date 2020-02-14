@@ -43,8 +43,12 @@ class Database(bob.bio.base.database.FileListBioDatabase, SwanVideoDatabase):
         )
 
     def objects(self, groups=None, protocol=None, purposes=None,
-                model_ids=None, classes=None, **kwargs):
+                model_ids=None, classes=None, filter_samples=None, **kwargs):
         files = super(Database, self).objects(
             groups=groups, protocol=protocol, purposes=purposes,
             model_ids=model_ids, classes=classes, **kwargs)
-        return self.update_files(files)
+        files = self.update_files(files)
+        if filter_samples is None:
+            return files
+        files = list(filter(filter_samples, files))
+        return files
