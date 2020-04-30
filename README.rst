@@ -1,18 +1,14 @@
 .. vim: set fileencoding=utf-8 :
 .. Fri May  5 11:35:14 CEST 2017
 
-.. image:: http://img.shields.io/badge/docs-stable-yellow.svg
-   :target: http://beatubulatest.lab.idiap.ch/private/docs/bob/bob.db.swan/stable/index.html
-.. image:: http://img.shields.io/badge/docs-latest-orange.svg
-   :target: http://beatubulatest.lab.idiap.ch/private/docs/bob/bob.db.swan/master/index.html
-.. image:: https://gitlab.idiap.ch/bob/bob.db.swan/badges/master/build.svg
+.. image:: https://img.shields.io/badge/docs-available-orage.svg
+   :target: https://www.idiap.ch/software/bob/docs/bob/bob.db.swan/master/index.html
+.. image:: https://gitlab.idiap.ch/bob/bob.db.swan/badges/master/pipeline.svg
    :target: https://gitlab.idiap.ch/bob/bob.db.swan/commits/master
 .. image:: https://gitlab.idiap.ch/bob/bob.db.swan/badges/master/coverage.svg
    :target: https://gitlab.idiap.ch/bob/bob.db.swan/commits/master
 .. image:: https://img.shields.io/badge/gitlab-project-0000c0.svg
    :target: https://gitlab.idiap.ch/bob/bob.db.swan
-.. image:: http://img.shields.io/pypi/v/bob.db.swan.svg
-   :target: https://pypi.python.org/pypi/bob.db.swan
 
 
 ==================================
