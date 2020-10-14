@@ -3,8 +3,8 @@ import scipy.signal
 from bob.db.base import read_annotation_file
 from bob.io.base import load
 from bob.io.video import reader
-from bob.bio.video.utils import FrameSelector
-from bob.bio.video.database import VideoBioFile
+from bob.bio.video_legacy.utils import FrameSelector
+from bob.bio.video_legacy.database import VideoBioFile
 import numpy as np
 import subprocess
 import tempfile

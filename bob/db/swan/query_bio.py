@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from bob.bio.spear.database import AudioBioFile
-import bob.bio.base
+from bob.bio.spear_legacy.database import AudioBioFile
+import bob.bio.base_legacy
 import bob.io.base
 import bob.io.video
 from bob.extension import rc
@@ -16,7 +16,7 @@ class SwanVideoBioFile(SwanVideoFile):
     """SwanVideoBioFile are video files actually"""
 
 
-class Database(bob.bio.base.database.FileListBioDatabase, SwanVideoDatabase):
+class Database(bob.bio.base_legacy.database.FileListBioDatabase, SwanVideoDatabase):
     """Wrapper class for the SWAN database for speaker recognition
     (http://www.idiap.ch/dataset/swan). This class defines a simple protocol
     for training, dev and and by splitting the audio files of the database in
