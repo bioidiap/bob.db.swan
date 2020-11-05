@@ -6,4 +6,3 @@ bob.io.video
 bob.ap
 bob.pad.base
 bob.pad.face
-bob.pad.voice
