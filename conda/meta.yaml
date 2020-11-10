@@ -27,7 +27,6 @@ requirements:
     - bob.ap
     - bob.pad.base
     - bob.pad.face
-    - bob.pad.voice
   run:
     - python
     - setuptools
