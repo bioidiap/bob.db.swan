@@ -1,7 +1,8 @@
 SWAN_FRAME_SHAPE = (3, 1280, 720)
 "Shape of the video frames in the swan database."
 
-from .query_bio import Database, SwanAudioBioFile, SwanVideoBioFile
+# from .query_bio import Database, SwanAudioBioFile, SwanVideoBioFile
+from .query_bio import Database, SwanVideoBioFile
 
 
 def __appropriate__(*args):
@@ -21,7 +22,7 @@ def __appropriate__(*args):
 
 __appropriate__(
     Database,
-    SwanAudioBioFile,
+    # SwanAudioBioFile,
     SwanVideoBioFile,
 )
 
